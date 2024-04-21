@@ -3,4 +3,42 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.thepan.mappers.EmailCodeMapper">
 
+    <update id="disableCheckCode">
+        update email_code
+            set status = 1
+        where email = #{email}
+           and status = 0
+    </update>
+
+    <insert id="insert" parameterType="com.thepan.dao.EmailCode">
+        INSERT INTO email_code
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="bean.email != null">
+                email,
+            </if>
+            <if test="bean.code != null">
+                code,
+            </if>
+            <if test="bean.createTime != null">
+                create_time,
+            </if>
+            <if test="bean.status != null">
+                status,
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="bean.email!=null">
+                #{bean.email},
+            </if>
+            <if test="bean.code!=null">
+                #{bean.code},
+            </if>
+            <if test="bean.createTime!=null">
+                #{bean.createTime},
+            </if>
+            <if test="bean.status!=null">
+                #{bean.status},
+            </if>
+        </trim>
+    </insert>
 </mapper>
