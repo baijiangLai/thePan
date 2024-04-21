@@ -60,8 +60,9 @@ public class EmailCodeServiceImpl implements EmailCodeService {
         }
         // 2. 生成验证码
         String code = StringTools.getRandomNumber(Constants.LENGTH_5);
-        // 3.像邮箱发送新验证码
-        sendEmailCode(email, code);
+        // 3. TODO 使用EmailUtil发送验证码
+        // TODO 发送验证码之后将验证码存入redis中，之后等登录的时候比较两个验证码
+
         // 4.将以前的验证码置为失效
         emailCodeMapper.disableCheckCode(email);
         // 5.插入新的验证码
@@ -71,38 +72,6 @@ public class EmailCodeServiceImpl implements EmailCodeService {
         emailCode.setStatus(Constants.ZERO);
         emailCode.setCreateTime(new Date());
         emailCodeMapper.insert(emailCode);
-    }
-
-    private   void  sendEmailCode(String email, String code) throws Exception {
-        try {
-            JavaMailSenderImpl javaMailSender = new JavaMailSenderImpl();
-            // 不用配置文件的，直接在这儿设置参数。 配置文件的似乎读不进去
-            javaMailSender.setHost("smtp.qq.com");
-            javaMailSender.setPort(465);
-            javaMailSender.setUsername("1330123181@qq.com");
-            javaMailSender.setPassword("gfddqcbuntzfjecj");
-            MimeMessage mimeMessage = javaMailSender.createMimeMessage();
-            MimeMessageHelper messageHelper = new MimeMessageHelper(mimeMessage,true);
-
-            // 从redis中获取邮箱配置
-            SysSettingsDto sysSettingsDto = redisComponent.getSysSettingsDto();
-
-            // 发件人邮箱  从配置文件中获取
-            messageHelper.setFrom(appConfig.getSendUserName());
-            // 收件邮箱
-            messageHelper.setTo(email);
-            // 标题 也可直接设置常量，没必要走redis
-            messageHelper.setSubject(sysSettingsDto.getRegisterEmailTitle());
-            // 邮件内容 也可直接设置常量，没必要走redis
-            messageHelper.setText(String.format(sysSettingsDto.getRegisterEmailContent(),code));
-            messageHelper.setSentDate(new Date());
-
-            javaMailSender.send(mimeMessage);
-        } catch (MessagingException e) {
-            e.printStackTrace();
-            throw  new Exception("邮件发送失败");
-        }
-
     }
 
 
