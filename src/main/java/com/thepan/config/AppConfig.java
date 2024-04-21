@@ -4,8 +4,6 @@ import lombok.Data;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.sql.DataSourceDefinition;
-
 @Component("AppConfig")
 @Data
 public class AppConfig {

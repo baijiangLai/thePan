@@ -15,13 +15,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
-
-import static org.springframework.core.annotation.AnnotationUtils.getAnnotations;
 
 /**
  * AOP全局拦截器的实现，用于在方法执行前进行统一的操作，比如参数校验和登录状态检查

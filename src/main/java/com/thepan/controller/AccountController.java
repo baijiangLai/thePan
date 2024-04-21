@@ -9,13 +9,15 @@ import com.thepan.utils.CreateImageCode;
 import com.thepan.utils.ResponseUtils;
 import com.thepan.vo.ResponseVO;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
-import javax.xml.ws.Response;
 import java.io.IOException;
 import java.util.Date;
+import java.util.Objects;
 
 
 @RestController("accountController")
@@ -34,7 +36,7 @@ public class AccountController {
         response.setDateHeader("Expires", 0);
 
         //将验证码的数值存在session里面去 0:登录注册 1:邮箱验证码发送 默认0
-        if (type=='0' || type==null){
+        if (type.intValue() == 0 || Objects.isNull(type)){
             session.setAttribute(Constants.CHECK_CODE_KEY,createImageCode.getCode());
         }else {
             session.setAttribute(Constants.CHECK_CODE_KEY_EMAIL,createImageCode.getCode());
