@@ -11,5 +11,11 @@ public interface EmailCodeService {
      */
     public void sendEmailCode(String email, Integer type) throws Exception;
 
+    /**
+     * 验证邮箱验证码
+     * @param email
+     * @param code
+     */
+    public void vertifyEmailCode(String email, String code) ;
 
 }

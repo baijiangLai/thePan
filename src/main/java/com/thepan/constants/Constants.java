@@ -70,6 +70,7 @@ public class Constants {
      */
     public static final Integer REDIS_KEY_EXPIRES_FIVE_MIN = REDIS_KEY_EXPIRES_ONE_MIN * 5;
 
+    public static final String CREATE_TIME = "create_time";
 
     public static final String REDIS_KEY_DOWNLOAD = "easypan:download:";
 

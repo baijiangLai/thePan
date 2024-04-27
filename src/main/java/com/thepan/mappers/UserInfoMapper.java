@@ -15,5 +15,9 @@ public interface UserInfoMapper<T, P> extends BaseMapper<T, P> {
      */
     T selectByEmail(@Param("email") String email);
 
+    /**
+     * 根据nick获取对象
+     */
+    T selectByNickname(@Param("nickName") String nickName);
 
 }

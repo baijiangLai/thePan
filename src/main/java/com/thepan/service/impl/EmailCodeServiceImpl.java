@@ -6,10 +6,13 @@ import com.thepan.constants.Constants;
 import com.thepan.dao.EmailCode;
 import com.thepan.dao.SysSettingsDto;
 import com.thepan.dao.UserInfo;
+import com.thepan.exception.BusinessException;
 import com.thepan.mappers.EmailCodeMapper;
 import com.thepan.mappers.UserInfoMapper;
 import com.thepan.service.EmailCodeService;
+import com.thepan.utils.EmailUtil;
 import com.thepan.utils.RedisComponent;
+import com.thepan.utils.RedisUtil;
 import com.thepan.utils.StringTools;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
@@ -40,6 +43,9 @@ public class EmailCodeServiceImpl implements EmailCodeService {
     @Autowired
     private RedisComponent redisComponent;
 
+    @Autowired
+    RedisUtil redisUtil;
+
 
 
     /**
@@ -60,9 +66,12 @@ public class EmailCodeServiceImpl implements EmailCodeService {
         }
         // 2. 生成验证码
         String code = StringTools.getRandomNumber(Constants.LENGTH_5);
-        // 3. TODO 使用EmailUtil发送验证码
-        // TODO 发送验证码之后将验证码存入redis中，之后等登录的时候比较两个验证码
-
+        // 3. 使用EmailUtil发送验证码
+        SysSettingsDto sysSettingsDto = redisComponent.getSysSettingsDto();
+        EmailUtil.sendEmailUtil(appConfig.getSendUserName(),email,sysSettingsDto.getRegisterEmailTitle(),String.format(sysSettingsDto.getRegisterEmailContent(),code));
+        // 4. 将验证码相关信息存入redis，也可将验证码存入数据库，这里两种方法都试一下
+        redisUtil.set(Constants.CHECK_CODE_KEY_EMAIL,code);
+        redisUtil.set(Constants.CREATE_TIME,new Date());
         // 4.将以前的验证码置为失效
         emailCodeMapper.disableCheckCode(email);
         // 5.插入新的验证码
@@ -74,5 +83,17 @@ public class EmailCodeServiceImpl implements EmailCodeService {
         emailCodeMapper.insert(emailCode);
     }
 
+    @Override
+    public void vertifyEmailCode(String email, String code) {
+        // 查找该邮箱是否有生效的验证码
+        EmailCode emailCode = emailCodeMapper.selectByEmailAndCode(email, code);
+        if (null == emailCode) {
+            throw new BusinessException("邮箱验证码不正确或已失效");
+        }
 
+        if (System.currentTimeMillis() - emailCode.getCreateTime().getTime() > Constants.LENGTH_15 * 1000 * 60) {
+            throw new BusinessException("邮箱验证码已失效");
+        }
+        emailCodeMapper.disableEmailCode(email);
+    }
 }

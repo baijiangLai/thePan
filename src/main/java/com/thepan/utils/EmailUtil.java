@@ -15,12 +15,13 @@ public class EmailUtil {
 
     /**
      * @param sendName 发件人
+     * @param password 密码
      * @param name     收件人
      * @param title    邮件标题
      * @param context  邮件内容
      * @return
      */
-    public static String sendEmailUtil(String sendName, String name,String title, String context){
+    public static String sendEmailUtil(String sendName,String name,String title, String context){
         try {
             // 创建Properties 类用于记录邮箱的一些属性
             Properties props = new Properties();
@@ -33,7 +34,7 @@ public class EmailUtil {
             // 此处填写，写信人的账号
             props.put("mail.user",sendName);
             // 此处填写16位STMP口令
-            props.put("mail.password", "yelxejtdfjsfbbca");
+            props.put("mail.password", "okuexoidotnpbaee");
 
             // 构建授权信息，用于进行SMTP进行身份验证
             Authenticator authenticator = new Authenticator() {

@@ -3,8 +3,10 @@ package com.thepan.controller;
 import com.thepan.aspect.annotation.GlobalIntercepter;
 import com.thepan.aspect.annotation.VerifyParam;
 import com.thepan.constants.Constants;
+import com.thepan.dao.UserInfo;
 import com.thepan.enums.VerifyRegexEnum;
 import com.thepan.service.EmailCodeService;
+import com.thepan.service.UserInfoService;
 import com.thepan.utils.CreateImageCode;
 import com.thepan.utils.ResponseUtils;
 import com.thepan.vo.ResponseVO;
@@ -19,12 +21,21 @@ import java.io.IOException;
 import java.util.Date;
 import java.util.Objects;
 
-
 @RestController("accountController")
 public class AccountController {
     @Autowired
     EmailCodeService emailCodeService;
 
+    @Autowired
+    UserInfoService userInfoService;
+
+    /**
+     * 给前端传邮件验证码并存入session
+     * @param response
+     * @param session
+     * @param type
+     * @throws IOException
+     */
     @GetMapping("/checkCode")
     public void checkcode(HttpServletResponse response, HttpSession session, Integer type) throws IOException { // 图片通过response传递给前端
         // 创建随机验证码
@@ -69,5 +80,43 @@ public class AccountController {
       }finally {
           session.removeAttribute(Constants.CHECK_CODE_KEY_EMAIL); // 移除旧验证码
       }
+    }
+
+    /**
+     * 注册
+     *  1. 验证验证码是否正确  2. 验证邮箱是否已注册  3. 注册
+     * @param httpSession
+     * @param nickName
+     * @param password
+     * @param email
+     * @param checkCode
+     * @return
+     */
+    @PostMapping("/register")
+    @GlobalIntercepter(checkParams = true)
+    public ResponseVO register(HttpSession httpSession,
+                               @VerifyParam(required = true)String nickName,
+                               @VerifyParam(required = true,regex = VerifyRegexEnum.PASSWORD, min = 8, max = 18)String password,
+                               @VerifyParam(required = true,regex= VerifyRegexEnum.EMAIL)String email,
+                               @VerifyParam(required = true)String checkCode,
+                               @VerifyParam(required = true)String emailCode) {
+        try {
+            if (!httpSession.getAttribute(Constants.CHECK_CODE_KEY).equals(checkCode.toLowerCase())) {
+                throw new Exception("验证码输入不正确，请重新输入！！！");
+            }
+            // 注册
+            userInfoService.register(email, password, emailCode, nickName);
+            ResponseVO responseVO = new ResponseVO();
+            responseVO.setInfo("注册成功！！！");
+            return responseVO;
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (httpSession.getAttribute(Constants.CHECK_CODE_KEY) != null) {
+                httpSession.removeAttribute(Constants.CHECK_CODE_KEY); // 移除旧验证码
+            }
+        }
+
+        return null;
     }
 }

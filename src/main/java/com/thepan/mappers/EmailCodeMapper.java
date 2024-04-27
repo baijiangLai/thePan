@@ -11,4 +11,8 @@ import org.apache.ibatis.annotations.Param;
 public interface EmailCodeMapper<T, P> extends BaseMapper<T, P> {
 
         public void disableCheckCode(@Param("email") String email);
+
+    T selectByEmailAndCode(String email, String code);
+
+    void disableEmailCode(String email);
 }

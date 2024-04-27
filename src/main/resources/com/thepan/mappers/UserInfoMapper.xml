@@ -18,4 +18,95 @@
         from user_info
         where email =#{email}
     </select>
+
+    <select id="selectByNickname" resultType="com.thepan.dao.UserInfo">
+        select user_id,
+               nick_name,
+               email,
+               qq_open_id,
+               qq_avatar,
+               password,
+               join_time,
+               last_login_time,
+               status,
+               use_space,
+               total_space
+        from user_info
+        where nick_name =#{nickName}
+    </select>
+
+    <insert id="insert">
+        INSERT INTO user_info
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="bean.userId != null">
+                user_id,
+            </if>
+            <if test="bean.nickName != null">
+                nick_name,
+            </if>
+            <if test="bean.email != null">
+                email,
+            </if>
+            <if test="bean.qqOpenId != null">
+                qq_open_id,
+            </if>
+            <if test="bean.qqAvatar != null">
+                qq_avatar,
+            </if>
+            <if test="bean.password != null">
+                password,
+            </if>
+            <if test="bean.joinTime != null">
+                join_time,
+            </if>
+            <if test="bean.lastLoginTime != null">
+                last_login_time,
+            </if>
+            <if test="bean.status != null">
+                status,
+            </if>
+            <if test="bean.useSpace != null">
+                use_space,
+            </if>
+            <if test="bean.totalSpace != null">
+                total_space,
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="bean.userId!=null">
+                #{bean.userId},
+            </if>
+            <if test="bean.nickName!=null">
+                #{bean.nickName},
+            </if>
+            <if test="bean.email!=null">
+                #{bean.email},
+            </if>
+            <if test="bean.qqOpenId!=null">
+                #{bean.qqOpenId},
+            </if>
+            <if test="bean.qqAvatar!=null">
+                #{bean.qqAvatar},
+            </if>
+            <if test="bean.password!=null">
+                #{bean.password},
+            </if>
+            <if test="bean.joinTime!=null">
+                #{bean.joinTime},
+            </if>
+            <if test="bean.lastLoginTime!=null">
+                #{bean.lastLoginTime},
+            </if>
+            <if test="bean.status!=null">
+                #{bean.status},
+            </if>
+            <if test="bean.useSpace!=null">
+                #{bean.useSpace},
+            </if>
+            <if test="bean.totalSpace!=null">
+                #{bean.totalSpace},
+            </if>
+        </trim>
+    </insert>
+
 </mapper>

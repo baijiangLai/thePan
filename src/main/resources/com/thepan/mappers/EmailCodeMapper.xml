@@ -10,6 +10,17 @@
            and status = 0
     </update>
 
+    <select id="selectByEmailAndCode" resultType="com.thepan.dao.EmailCode">
+        select email,
+               code,
+               create_time as createTime,
+               status
+        from email_code
+        where email=#{email}
+          and code=#{code}
+          and status='0'
+    </select>
+
     <insert id="insert" parameterType="com.thepan.dao.EmailCode">
         INSERT INTO email_code
         <trim prefix="(" suffix=")" suffixOverrides=",">
@@ -41,4 +52,9 @@
             </if>
         </trim>
     </insert>
+
+    <update id="disableEmailCode">
+        update user_info
+        set status='1' where email=#{email}
+    </update>
 </mapper>
