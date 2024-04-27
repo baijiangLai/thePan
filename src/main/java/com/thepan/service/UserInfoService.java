@@ -6,6 +6,6 @@ package com.thepan.service;
  */
 public interface UserInfoService {
 
-    public void register(String email, String password, String code, String nikeName) throws Exception;
+    int register(String email, String password, String code, String nikeName);
 
 }

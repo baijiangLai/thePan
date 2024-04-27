@@ -9,13 +9,13 @@ public interface EmailCodeService {
     /**
      * 发送邮箱验证码
      */
-    public void sendEmailCode(String email, Integer type) throws Exception;
+    void sendEmailCode(String email, Integer type);
 
     /**
      * 验证邮箱验证码
      * @param email
      * @param code
      */
-    public void vertifyEmailCode(String email, String code) ;
+    void vertifyEmailCode(String email, String code) ;
 
 }

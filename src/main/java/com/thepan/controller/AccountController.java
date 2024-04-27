@@ -3,8 +3,8 @@ package com.thepan.controller;
 import com.thepan.aspect.annotation.GlobalIntercepter;
 import com.thepan.aspect.annotation.VerifyParam;
 import com.thepan.constants.Constants;
-import com.thepan.dao.UserInfo;
 import com.thepan.enums.VerifyRegexEnum;
+import com.thepan.exception.BusinessException;
 import com.thepan.service.EmailCodeService;
 import com.thepan.service.UserInfoService;
 import com.thepan.utils.CreateImageCode;
@@ -102,13 +102,16 @@ public class AccountController {
                                @VerifyParam(required = true)String emailCode) {
         try {
             if (!httpSession.getAttribute(Constants.CHECK_CODE_KEY).equals(checkCode.toLowerCase())) {
-                throw new Exception("验证码输入不正确，请重新输入！！！");
+                throw new BusinessException("验证码输入不正确，请重新输入！！！");
             }
             // 注册
-            userInfoService.register(email, password, emailCode, nickName);
-            ResponseVO responseVO = new ResponseVO();
-            responseVO.setInfo("注册成功！！！");
-            return responseVO;
+            int rows = userInfoService.register(email, password, emailCode, nickName);
+
+            if (rows == 1) {
+                ResponseVO responseVO = new ResponseVO();
+                responseVO.setInfo("注册成功！！！");
+                return responseVO;
+            }
         } catch (Exception e) {
             e.printStackTrace();
         } finally {

@@ -15,12 +15,8 @@ import com.thepan.utils.RedisComponent;
 import com.thepan.utils.RedisUtil;
 import com.thepan.utils.StringTools;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.mail.javamail.JavaMailSenderImpl;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
-import javax.mail.MessagingException;
-import javax.mail.internet.MimeMessage;
 import java.util.Date;
 
 
@@ -31,10 +27,10 @@ import java.util.Date;
 public class EmailCodeServiceImpl implements EmailCodeService {
 
     @Autowired
-    private UserInfoMapper<UserInfo,UserInfo> userInfoMapper;
+    private UserInfoMapper userInfoMapper;
 
     @Autowired
-    private EmailCodeMapper<EmailCode,EmailCode> emailCodeMapper;
+    private EmailCodeMapper emailCodeMapper;
 
 
     @Autowired
@@ -56,12 +52,12 @@ public class EmailCodeServiceImpl implements EmailCodeService {
      * 5. 存入新验证码
      */
     @Override
-    public void sendEmailCode(String email, Integer type) throws Exception {
+    public void sendEmailCode(String email, Integer type) {
         // 1. 是否为注册
         if (Constants.ZERO.equals(type)) {
             UserInfo userInfo = userInfoMapper.selectByEmail(email);
             if (userInfo!=null){
-                throw new Exception("该邮箱已被注册！！！");
+                throw new BusinessException("该邮箱已被注册！！！");
             }
         }
         // 2. 生成验证码

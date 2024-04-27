@@ -4,6 +4,7 @@ package com.thepan.service.impl;
 import com.thepan.constants.Constants;
 import com.thepan.dao.UserInfo;
 import com.thepan.enums.UserStatusEnum;
+import com.thepan.exception.BusinessException;
 import com.thepan.mappers.UserInfoMapper;
 import com.thepan.service.EmailCodeService;
 import com.thepan.service.UserInfoService;
@@ -21,7 +22,7 @@ import java.util.Date;
 @Service("userInfoService")
 public class UserInfoServiceImpl implements UserInfoService {
     @Autowired
-    UserInfoMapper<UserInfo, UserInfo> userInfoMapper;
+    UserInfoMapper userInfoMapper;
 
     @Autowired
     RedisUtil redisUtil;
@@ -44,15 +45,15 @@ public class UserInfoServiceImpl implements UserInfoService {
      * @throws Exception
      */
     @Override
-    public void register(String email, String password, String code, String nikeName) throws Exception {
+    public int register(String email, String password, String code, String nikeName) {
         //1. 验证邮箱是否已注册以及昵称是否重复
         UserInfo userInfo = userInfoMapper.selectByEmail(email);
         if (userInfo != null) {
-            throw new Exception("邮箱已注册");
+            throw new BusinessException("邮箱已注册");
         }
         UserInfo userInfo1 = userInfoMapper.selectByNickname(nikeName);
         if (userInfo1 != null) {
-            throw new Exception("昵称已经存在");
+            throw new BusinessException("昵称已经存在");
         }
 
         //2. 验证邮箱验证码是否正确,可直接从redis取验证码  、也可使用数据库中存入的验证码
@@ -71,7 +72,10 @@ public class UserInfoServiceImpl implements UserInfoService {
         // 邮箱初始化总空间需要从redis里面取
         userInfo.setTotalSpace(redisComponent.getSysSettingsDto().getUserInitUseSpace() * Constants.MB);
         userInfo.setUseSpace(0L);
-        userInfoMapper.insert(userInfo);
-
+        Integer rows = userInfoMapper.insert(userInfo);
+        if (rows != 1) {
+            throw new BusinessException("注册失败");
+        }
+        return rows;
     }
 }
