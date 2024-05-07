@@ -1,4 +1,4 @@
-package com.thepan.aspect.annotation;
+package com.thepan.annotation;
 import com.thepan.enums.VerifyRegexEnum;
 
 import java.lang.annotation.ElementType;

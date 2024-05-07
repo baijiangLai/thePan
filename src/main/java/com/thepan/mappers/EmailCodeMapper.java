@@ -1,7 +1,7 @@
 package com.thepan.mappers;
 
 
-import com.thepan.dao.EmailCode;
+import com.thepan.entity.dao.EmailCode;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 

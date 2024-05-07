@@ -3,7 +3,7 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.thepan.mappers.UserInfoMapper">
 
-    <select id="selectByEmail" resultType="com.thepan.dao.UserInfo">
+    <select id="selectByEmail" resultType="com.thepan.entity.dao.UserInfo">
         select user_id,
                nick_name,
                email,
@@ -19,7 +19,7 @@
         where email =#{email}
     </select>
 
-    <select id="selectByNickname" resultType="com.thepan.dao.UserInfo">
+    <select id="selectByNickname" resultType="com.thepan.entity.dao.UserInfo">
         select user_id,
                nick_name,
                email,
@@ -108,5 +108,80 @@
             </if>
         </trim>
     </insert>
+
+    <update id="updateByUserId" parameterType="com.thepan.entity.dao.UserInfo">
+        UPDATE user_info
+        <set>
+            <if test="bean.nickName != null">
+                nick_name = #{bean.nickName},
+            </if>
+            <if test="bean.email != null">
+                email = #{bean.email},
+            </if>
+            <if test="bean.qqOpenId != null">
+                qq_open_id = #{bean.qqOpenId},
+            </if>
+            <if test="bean.qqAvatar != null">
+                qq_avatar = #{bean.qqAvatar},
+            </if>
+            <if test="bean.password != null">
+                password = #{bean.password},
+            </if>
+            <if test="bean.joinTime != null">
+                join_time = #{bean.joinTime},
+            </if>
+            <if test="bean.lastLoginTime != null">
+                last_login_time = #{bean.lastLoginTime},
+            </if>
+            <if test="bean.status != null">
+                status = #{bean.status},
+            </if>
+            <if test="bean.useSpace != null">
+                use_space = #{bean.useSpace},
+            </if>
+            <if test="bean.totalSpace != null">
+                total_space = #{bean.totalSpace},
+            </if>
+        </set>
+        where user_id=#{userId}
+    </update>
+
+
+    <update id="updateByEmail" parameterType="com.thepan.entity.dao.UserInfo">
+        UPDATE user_info
+        <set>
+            <if test="bean.userId != null">
+                user_id = #{bean.userId},
+            </if>
+            <if test="bean.nickName != null">
+                nick_name = #{bean.nickName},
+            </if>
+            <if test="bean.qqOpenId != null">
+                qq_open_id = #{bean.qqOpenId},
+            </if>
+            <if test="bean.qqAvatar != null">
+                qq_avatar = #{bean.qqAvatar},
+            </if>
+            <if test="bean.password != null">
+                password = #{bean.password},
+            </if>
+            <if test="bean.joinTime != null">
+                join_time = #{bean.joinTime},
+            </if>
+            <if test="bean.lastLoginTime != null">
+                last_login_time = #{bean.lastLoginTime},
+            </if>
+            <if test="bean.status != null">
+                status = #{bean.status},
+            </if>
+            <if test="bean.useSpace != null">
+                use_space = #{bean.useSpace},
+            </if>
+            <if test="bean.totalSpace != null">
+                total_space = #{bean.totalSpace},
+            </if>
+        </set>
+        where email=#{email}
+    </update>
 
 </mapper>

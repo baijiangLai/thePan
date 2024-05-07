@@ -1,33 +1,49 @@
 package com.thepan.controller;
 
-import com.thepan.aspect.annotation.GlobalIntercepter;
-import com.thepan.aspect.annotation.VerifyParam;
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.util.StrUtil;
+import com.thepan.annotation.GlobalInterceptor;
+import com.thepan.annotation.VerifyParam;
 import com.thepan.constants.Constants;
+import com.thepan.entity.dao.SessionWebUserDto;
+import com.thepan.entity.dao.UserInfo;
 import com.thepan.enums.VerifyRegexEnum;
 import com.thepan.exception.BusinessException;
 import com.thepan.service.EmailCodeService;
 import com.thepan.service.UserInfoService;
-import com.thepan.utils.CreateImageCode;
-import com.thepan.utils.ResponseUtils;
+import com.thepan.utils.*;
 import com.thepan.vo.ResponseVO;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import javax.annotation.Resource;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.util.Date;
 import java.util.Objects;
 
+import static com.thepan.utils.ResponseUtils.getSuccessResponseVO;
+
 @RestController("accountController")
+@Slf4j
 public class AccountController {
     @Autowired
-    EmailCodeService emailCodeService;
+    private EmailCodeService emailCodeService;
 
     @Autowired
-    UserInfoService userInfoService;
+    private UserInfoService userInfoService;
+
+    @Resource
+    private RedisComponent redisComponent;
 
     /**
      * 给前端传邮件验证码并存入session
@@ -63,7 +79,7 @@ public class AccountController {
      * 2. 给邮箱发送验证码
      */
     @PostMapping("/sendEmailCode")
-    @GlobalIntercepter(checkParams = true)
+    @GlobalInterceptor
     public ResponseVO sendEmailCode(HttpSession session,
                                           @VerifyParam(required = true, regex= VerifyRegexEnum.EMAIL) String email,
                                     @VerifyParam(required = true) String checkCode,
@@ -73,7 +89,7 @@ public class AccountController {
                 throw new Exception("验证码输入不正确，请重新输入！！！");
             }
           emailCodeService.sendEmailCode(email,type);
-          return ResponseUtils.getSuccessResponseVO(new Date());
+          return getSuccessResponseVO(new Date());
     } catch (Exception e) {
           e.printStackTrace();
           return ResponseUtils.getErrorResponseVO(new Date());
@@ -93,7 +109,7 @@ public class AccountController {
      * @return
      */
     @PostMapping("/register")
-    @GlobalIntercepter(checkParams = true)
+    @GlobalInterceptor
     public ResponseVO register(HttpSession httpSession,
                                @VerifyParam(required = true)String nickName,
                                @VerifyParam(required = true,regex = VerifyRegexEnum.PASSWORD, min = 8, max = 18)String password,
@@ -122,4 +138,140 @@ public class AccountController {
 
         return null;
     }
+
+
+    @RequestMapping("/login")
+    @GlobalInterceptor(checkLogin = false, checkParams = true)
+    public ResponseVO login(HttpSession session, HttpServletRequest request,
+                            @VerifyParam(required = true) String email,
+                            @VerifyParam(required = true) String password,
+                            @VerifyParam(required = true) String checkCode) {
+        try {
+            if (!checkCode.equalsIgnoreCase((String) session.getAttribute(Constants.CHECK_CODE_KEY))) {
+                throw new BusinessException("图片验证码不正确");
+            }
+            SessionWebUserDto sessionWebUserDto = userInfoService.login(email, password);
+            session.setAttribute(Constants.SESSION_KEY, sessionWebUserDto);
+            return getSuccessResponseVO(sessionWebUserDto);
+        } finally {
+            session.removeAttribute(Constants.CHECK_CODE_KEY);
+        }
+    }
+
+    @RequestMapping("/resetPwd")
+    @GlobalInterceptor(checkLogin = false, checkParams = true)
+    public ResponseVO resetPwd(HttpSession session,
+                               @VerifyParam(required = true, regex = VerifyRegexEnum.EMAIL, max = 150) String email,
+                               @VerifyParam(required = true, regex = VerifyRegexEnum.PASSWORD, min = 8, max = 18) String password,
+                               @VerifyParam(required = true) String checkCode,
+                               @VerifyParam(required = true) String emailCode) {
+        try {
+            if (!checkCode.equalsIgnoreCase((String) session.getAttribute(Constants.CHECK_CODE_KEY))) {
+                throw new BusinessException("图片验证码不正确");
+            }
+            userInfoService.resetPwd(email, password, emailCode);
+            return getSuccessResponseVO(null);
+        } finally {
+            session.removeAttribute(Constants.CHECK_CODE_KEY);
+        }
+    }
+
+    @RequestMapping("/getAvatar/{userId}")
+    @GlobalInterceptor(checkLogin = false, checkParams = true)
+    public void getAvatar(HttpServletResponse response, @VerifyParam(required = true) @PathVariable("userId") String userId) {
+        String avatarFolderName = Constants.FILE_FOLDER_FILE + Constants.FILE_FOLDER_AVATAR_NAME;
+        File folder = new File(FolderUtil.getProjectFolder() + avatarFolderName);
+        if (!folder.exists()) {
+            folder.mkdirs();
+        }
+
+        String avatarPath = FolderUtil.getProjectFolder() + avatarFolderName + userId + Constants.AVATAR_SUFFIX;
+        File file = new File(avatarPath);
+        if (!file.exists()) {
+            if (!new File(FolderUtil.getProjectFolder() + avatarFolderName + Constants.AVATAR_DEFUALT).exists()) {
+                response.setHeader("Content-Type", "application/json;charset=UTF-8");
+                response.setStatus(HttpStatus.OK.value());
+                PrintWriter writer = null;
+                try {
+                    writer = response.getWriter();
+                    writer.print("请在头像目录下放置默认头像default_avatar.jpg");
+                    writer.close();
+                } catch (Exception e) {
+                    log.error("输出无默认图失败", e);
+                } finally {
+                    writer.close();
+                }
+                return;
+            }
+            avatarPath = FolderUtil.getProjectFolder() + avatarFolderName + Constants.AVATAR_DEFUALT;
+        }
+        response.setContentType("image/jpg");
+        if (StrUtil.isEmpty(avatarPath)) {
+            return;
+        }
+        try {
+            OutputStream outputStream = response.getOutputStream();
+            outputStream.write(FileUtil.readBytes(avatarPath));
+        }catch (Exception e) {
+            e.printStackTrace();
+        }
+
+    }
+
+
+    @RequestMapping("/getUserInfo")
+    @GlobalInterceptor
+    public ResponseVO getUserInfo(HttpSession session) {
+        SessionWebUserDto sessionWebUserDto = SessionUtil.getUserInfoFromSession(session);
+        return getSuccessResponseVO(sessionWebUserDto);
+    }
+
+    @RequestMapping("/getUseSpace")
+    @GlobalInterceptor
+    public ResponseVO getUseSpace(HttpSession session) {
+        SessionWebUserDto sessionWebUserDto = SessionUtil.getUserInfoFromSession(session);
+        return getSuccessResponseVO(redisComponent.getUserSpaceUse(sessionWebUserDto.getUserId()));
+    }
+
+    @RequestMapping("/logout")
+    public ResponseVO logout(HttpSession session) {
+        session.invalidate();
+        return getSuccessResponseVO(null);
+    }
+
+    @RequestMapping("/updateUserAvatar")
+    @GlobalInterceptor
+    public ResponseVO updateUserAvatar(HttpSession session, MultipartFile avatar) {
+        SessionWebUserDto webUserDto = SessionUtil.getUserInfoFromSession(session);
+        String baseFolder = FolderUtil.getProjectFolder() + Constants.FILE_FOLDER_FILE;
+        File targetFileFolder = new File(baseFolder + Constants.FILE_FOLDER_AVATAR_NAME);
+        if (!targetFileFolder.exists()) {
+            targetFileFolder.mkdirs();
+        }
+        File targetFile = new File(targetFileFolder.getPath() + "/" + webUserDto.getUserId() + Constants.AVATAR_SUFFIX);
+        try {
+            avatar.transferTo(targetFile);
+        } catch (Exception e) {
+            log.error("上传头像失败", e);
+        }
+
+        UserInfo userInfo = new UserInfo();
+        userInfo.setQqAvatar("");
+        userInfoService.updateUserInfoByUserId(userInfo, webUserDto.getUserId());
+        webUserDto.setAvatar(null);
+        session.setAttribute(Constants.SESSION_KEY, webUserDto);
+        return getSuccessResponseVO(null);
+    }
+
+    @RequestMapping("/updatePassword")
+    @GlobalInterceptor(checkParams = true)
+    public ResponseVO updatePassword(HttpSession session,
+                                     @VerifyParam(required = true, regex = VerifyRegexEnum.PASSWORD, min = 8, max = 18) String password) {
+        SessionWebUserDto sessionWebUserDto = SessionUtil.getUserInfoFromSession(session);
+        UserInfo userInfo = new UserInfo();
+        userInfo.setPassword(StringTools.encodeByMD5(password));
+        userInfoService.updateUserInfoByUserId(userInfo, sessionWebUserDto.getUserId());
+        return getSuccessResponseVO(null);
+    }
+
 }

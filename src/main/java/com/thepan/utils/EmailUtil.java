@@ -1,14 +1,9 @@
 package com.thepan.utils;
 
 
-import com.thepan.dao.SysSettingsDto;
-import org.springframework.mail.javamail.JavaMailSenderImpl;
-import org.springframework.mail.javamail.MimeMessageHelper;
-
 import javax.mail.*;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
-import java.util.Date;
 import java.util.Properties;
 
 public class EmailUtil {

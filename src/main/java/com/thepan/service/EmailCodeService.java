@@ -16,6 +16,6 @@ public interface EmailCodeService {
      * @param email
      * @param code
      */
-    void vertifyEmailCode(String email, String code) ;
+    void checkCode(String email, String code) ;
 
 }

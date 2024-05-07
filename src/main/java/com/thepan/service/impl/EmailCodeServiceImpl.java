@@ -3,9 +3,9 @@ package com.thepan.service.impl;
 
 import com.thepan.config.AppConfig;
 import com.thepan.constants.Constants;
-import com.thepan.dao.EmailCode;
-import com.thepan.dao.SysSettingsDto;
-import com.thepan.dao.UserInfo;
+import com.thepan.entity.dao.EmailCode;
+import com.thepan.entity.dao.SysSettingsDto;
+import com.thepan.entity.dao.UserInfo;
 import com.thepan.exception.BusinessException;
 import com.thepan.mappers.EmailCodeMapper;
 import com.thepan.mappers.UserInfoMapper;
@@ -80,7 +80,7 @@ public class EmailCodeServiceImpl implements EmailCodeService {
     }
 
     @Override
-    public void vertifyEmailCode(String email, String code) {
+    public void checkCode(String email, String code) {
         // 查找该邮箱是否有生效的验证码
         EmailCode emailCode = emailCodeMapper.selectByEmailAndCode(email, code);
         if (null == emailCode) {

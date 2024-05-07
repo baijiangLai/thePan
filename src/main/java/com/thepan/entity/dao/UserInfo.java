@@ -1,4 +1,4 @@
-package com.thepan.dao;
+package com.thepan.entity.dao;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.thepan.enums.DateTimePatternEnum;

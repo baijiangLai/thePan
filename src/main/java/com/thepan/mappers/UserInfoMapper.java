@@ -1,7 +1,7 @@
 package com.thepan.mappers;
 
 
-import com.thepan.dao.UserInfo;
+import com.thepan.entity.dao.UserInfo;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -20,5 +20,11 @@ public interface UserInfoMapper extends BaseMapper {
      * 根据nick获取对象
      */
     UserInfo selectByNickname(@Param("nickName") String nickName);
+
+
+    Integer updateByUserId(@Param("bean") UserInfo userInfo, @Param("userId") String userId);
+
+
+    Integer updateByEmail(@Param("bean") UserInfo userInfo, @Param("email") String email);
 
 }

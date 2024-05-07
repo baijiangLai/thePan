@@ -1,9 +1,10 @@
-package com.thepan.dao;
+package com.thepan.entity.dao;
 
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.thepan.enums.DateTimePatternEnum;
 import com.thepan.utils.DateUtil;
+import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.io.Serializable;
@@ -13,6 +14,7 @@ import java.util.Date;
 /**
  * 邮箱验证码
  */
+@Data
 public class EmailCode implements Serializable {
 
 
@@ -37,39 +39,6 @@ public class EmailCode implements Serializable {
      * 0:未使用  1:已使用
      */
     private Integer status;
-
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getEmail() {
-        return this.email;
-    }
-
-    public void setCode(String code) {
-        this.code = code;
-    }
-
-    public String getCode() {
-        return this.code;
-    }
-
-    public void setCreateTime(Date createTime) {
-        this.createTime = createTime;
-    }
-
-    public Date getCreateTime() {
-        return this.createTime;
-    }
-
-    public void setStatus(Integer status) {
-        this.status = status;
-    }
-
-    public Integer getStatus() {
-        return this.status;
-    }
 
     @Override
     public String toString() {

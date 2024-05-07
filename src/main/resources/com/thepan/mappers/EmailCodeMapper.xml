@@ -10,7 +10,7 @@
            and status = 0
     </update>
 
-    <select id="selectByEmailAndCode" resultType="com.thepan.dao.EmailCode">
+    <select id="selectByEmailAndCode" resultType="com.thepan.entity.dao.EmailCode">
         select email,
                code,
                create_time as createTime,
@@ -21,7 +21,7 @@
           and status='0'
     </select>
 
-    <insert id="insert" parameterType="com.thepan.dao.EmailCode">
+    <insert id="insert" parameterType="com.thepan.entity.dao.EmailCode">
         INSERT INTO email_code
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="bean.email != null">

@@ -1,6 +1,9 @@
 package com.thepan.service;
 
 
+import com.thepan.entity.dao.SessionWebUserDto;
+import com.thepan.entity.dao.UserInfo;
+
 /**
  * 用户信息 业务接口
  */
@@ -8,4 +11,9 @@ public interface UserInfoService {
 
     int register(String email, String password, String code, String nikeName);
 
+    SessionWebUserDto login(String email, String password);
+
+    void resetPwd(String email, String password, String emailCode);
+
+    void updateUserInfoByUserId(UserInfo userInfo, String userId);
 }
