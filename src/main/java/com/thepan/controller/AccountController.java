@@ -85,8 +85,12 @@ public class AccountController {
                                     @VerifyParam(required = true) String checkCode,
                                     @VerifyParam(required = true)  Integer type){
       try{
-            if (!session.getAttribute(Constants.CHECK_CODE_KEY_EMAIL).equals(checkCode.toLowerCase())){
-                throw new Exception("验证码输入不正确，请重新输入！！！");
+          String sessionCode = (String) session.getAttribute(Constants.CHECK_CODE_KEY_EMAIL);
+          if (StrUtil.isEmpty(sessionCode)) {
+              throw new BusinessException("验证码已过期，请重新获取！！！");
+          }
+          if (!sessionCode.equals(checkCode.toLowerCase())){
+                throw new BusinessException("验证码输入不正确，请重新输入！！！");
             }
           emailCodeService.sendEmailCode(email,type);
           return getSuccessResponseVO(new Date());
