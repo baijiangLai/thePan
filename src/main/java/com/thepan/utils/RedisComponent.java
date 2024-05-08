@@ -54,4 +54,29 @@ public class RedisComponent {
         }
         return spaceDto;
     }
+
+    public Long getFileTempSize(String userId, String fileId) {
+        Long currentSize = getFileSizeFromRedis(Constants.REDIS_KEY_USER_FILE_TEMP_SIZE + userId + fileId);
+        return currentSize;
+    }
+
+    private Long getFileSizeFromRedis(String key) {
+        Object sizeObj = redisUtil.get(key);
+        if (sizeObj == null) {
+            return 0L;
+        }
+        if (sizeObj instanceof Integer) {
+            return ((Integer) sizeObj).longValue();
+        } else if (sizeObj instanceof Long) {
+            return (Long) sizeObj;
+        }
+
+        return 0L;
+    }
+
+
+    public void saveFileTempSize(String userId, String fileId, Long fileSize) {
+        Long currentSize = getFileTempSize(userId, fileId);
+        redisUtil.set(Constants.REDIS_KEY_USER_FILE_TEMP_SIZE + userId + fileId, currentSize + fileSize, 1, TimeUnit.HOURS);
+    }
 }

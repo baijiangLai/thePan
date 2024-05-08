@@ -2,7 +2,6 @@ package com.thepan.utils;
 
 
 
-import cn.hutool.core.util.StrUtil;
 import com.thepan.constants.Constants;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -10,7 +9,17 @@ import org.apache.commons.lang3.RandomStringUtils;
 public class StringTools {
 
     public static String encodeByMD5(String originString) {
-        return StrUtil.isEmpty(originString) ? null : DigestUtils.md5Hex(originString);
+        return StringTools.isEmpty(originString) ? null : DigestUtils.md5Hex(originString);
+    }
+
+    public static boolean isEmpty(String str) {
+
+        if (null == str || "".equals(str) || "null".equals(str) || "\u0000".equals(str)) {
+            return true;
+        } else if ("".equals(str.trim())) {
+            return true;
+        }
+        return false;
     }
 
     public static String getFileSuffix(String fileName) {
@@ -48,7 +57,7 @@ public class StringTools {
 
 
     public static String escapeTitle(String content) {
-        if (StrUtil.isEmpty(content)) {
+        if (isEmpty(content)) {
             return content;
         }
         content = content.replace("<", "&lt;");
@@ -57,7 +66,7 @@ public class StringTools {
 
 
     public static String escapeHtml(String content) {
-        if (StrUtil.isEmpty(content)) {
+        if (isEmpty(content)) {
             return content;
         }
         content = content.replace("<", "&lt;");
@@ -67,7 +76,7 @@ public class StringTools {
     }
 
     public static boolean pathIsOk(String path) {
-        if (StrUtil.isEmpty(path)) {
+        if (StringTools.isEmpty(path)) {
             return true;
         }
         if (path.contains("../") || path.contains("..\\")) {

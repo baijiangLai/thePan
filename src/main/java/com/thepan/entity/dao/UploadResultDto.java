@@ -9,5 +9,4 @@ import java.io.Serializable;
 public class UploadResultDto implements Serializable {
     private String fileId;
     private String status;
-
 }

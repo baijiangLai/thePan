@@ -1,6 +1,7 @@
 package com.thepan.service.impl;
 
 
+import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
 import com.thepan.constants.Constants;
 import com.thepan.entity.dao.FileInfo;
@@ -13,12 +14,16 @@ import com.thepan.entity.query.SimplePage;
 import com.thepan.entity.vo.file.PaginationResultVO;
 import com.thepan.exception.BusinessException;
 import com.thepan.mappers.FileInfoMapper;
+import com.thepan.mappers.UserInfoMapper;
 import com.thepan.service.FileInfoService;
 import com.thepan.utils.DateUtil;
+import com.thepan.utils.FolderUtil;
 import com.thepan.utils.RedisComponent;
 import com.thepan.utils.StringTools;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -28,6 +33,7 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.annotation.Resource;
 import java.io.File;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.util.Date;
 import java.util.List;
 
@@ -42,7 +48,14 @@ public class FileInfoServiceImpl implements FileInfoService {
     private FileInfoMapper fileInfoMapper;
 
     @Resource
+    private UserInfoMapper userInfoMapper;
+
+    @Resource
     private RedisComponent redisComponent;
+
+    @Resource
+    @Lazy
+    private FileInfoServiceImpl fileInfoService;
 
     @Override
     public Long getUserUseSpace(String userId) {
@@ -73,6 +86,7 @@ public class FileInfoServiceImpl implements FileInfoService {
     @Transactional(rollbackFor = Exception.class)
     public UploadResultDto uploadFile(SessionWebUserDto webUserDto, String fileId, MultipartFile file, String fileName, String filePid, String fileMd5,
                                       Integer chunkIndex, Integer chunks) {
+        // 使用一个临时存放位置存储分片文件
         File tempFileFolder = null;
         Boolean uploadSuccess = true;
 
@@ -82,22 +96,25 @@ public class FileInfoServiceImpl implements FileInfoService {
             }
 
             UploadResultDto resultDto = new UploadResultDto();
-
             resultDto.setFileId(fileId);
-            Date curDate = new Date();
-            UserSpaceDto spaceDto = redisComponent.getUserSpaceUse(webUserDto.getUserId());
 
+            Date curDate = new Date();
+            UserSpaceDto userSpaceDto = redisComponent.getUserSpaceUse(webUserDto.getUserId());
+
+            // 第一个分片
             if (chunkIndex == 0) {
-                FileInfoQuery infoQuery = new FileInfoQuery();
-                infoQuery.setFileMd5(fileMd5);
-                infoQuery.setSimplePage(new SimplePage(0, 1));
-                infoQuery.setStatus(FileStatusEnums.USING.getStatus());
-                List<FileInfo> dbFileList = this.fileInfoMapper.selectList(infoQuery);
+                FileInfoQuery fileInfoQuery = new FileInfoQuery();
+                fileInfoQuery.setFileMd5(fileMd5);
+                fileInfoQuery.setSimplePage(new SimplePage(0, 1));
+                fileInfoQuery.setStatus(FileStatusEnums.USING.getStatus());
+
+                // 如果数据库中有，那么就直接使用秒传即可
+                List<FileInfo> dbFileList = this.fileInfoMapper.selectList(fileInfoQuery);
                 //秒传
                 if (!dbFileList.isEmpty()) {
                     FileInfo dbFile = dbFileList.get(0);
                     //判断文件状态
-                    if (dbFile.getFileSize() + spaceDto.getUseSpace() > spaceDto.getTotalSpace()) {
+                    if (dbFile.getFileSize() + userSpaceDto.getUseSpace() > userSpaceDto.getTotalSpace()) {
                         throw new BusinessException(ResponseCodeEnum.CODE_904);
                     }
                     dbFile.setFileId(fileId);
@@ -123,7 +140,7 @@ public class FileInfoServiceImpl implements FileInfoService {
             }
 
             //暂存在临时目录
-            String tempFolderName = appConfig.getProjectFolder() + Constants.FILE_FOLDER_TEMP;
+            String tempFolderName = FolderUtil.getProjectFolder() + Constants.FILE_FOLDER_TEMP;
             String currentUserFolderName = webUserDto.getUserId() + fileId;
             //创建临时目录
             tempFileFolder = new File(tempFolderName + currentUserFolderName);
@@ -133,7 +150,7 @@ public class FileInfoServiceImpl implements FileInfoService {
 
             //判断磁盘空间
             Long currentTempSize = redisComponent.getFileTempSize(webUserDto.getUserId(), fileId);
-            if (file.getSize() + currentTempSize + spaceDto.getUseSpace() > spaceDto.getTotalSpace()) {
+            if (file.getSize() + currentTempSize + userSpaceDto.getUseSpace() > userSpaceDto.getTotalSpace()) {
                 throw new BusinessException(ResponseCodeEnum.CODE_904);
             }
 
@@ -146,6 +163,7 @@ public class FileInfoServiceImpl implements FileInfoService {
                 resultDto.setStatus(UploadStatusEnums.UPLOADING.getCode());
                 return resultDto;
             }
+
             //最后一个分片上传完成，记录数据库，异步合并分片
             String month = DateUtil.format(curDate, DateTimePatternEnum.YYYYMM.getPattern());
             String fileSuffix = StringTools.getFileSuffix(fileName);
@@ -200,6 +218,131 @@ public class FileInfoServiceImpl implements FileInfoService {
                     FileUtils.deleteDirectory(tempFileFolder);
                 } catch (IOException e) {
                     log.error("删除临时目录失败");
+                }
+            }
+        }
+    }
+
+    @Async
+    public void transferFile(String fileId, SessionWebUserDto webUserDto) {
+        Boolean transferSuccess = true;
+        String targetFilePath = null;
+        String cover = null;
+        FileTypeEnums fileTypeEnum = null;
+        FileInfo fileInfo = fileInfoMapper.selectByFileIdAndUserId(fileId, webUserDto.getUserId());
+        try {
+
+            if (fileInfo == null || !FileStatusEnums.TRANSFER.getStatus().equals(fileInfo.getStatus())) {
+                return;
+            }
+
+            //临时目录
+            String tempFolderName = FolderUtil.getProjectFolder() + Constants.FILE_FOLDER_TEMP;
+            String currentUserFolderName = webUserDto.getUserId() + fileId;
+            File fileFolder = new File(tempFolderName + currentUserFolderName);
+            if (!fileFolder.exists()) {
+                fileFolder.mkdirs();
+            }
+
+            //文件后缀
+            String fileSuffix = StringTools.getFileSuffix(fileInfo.getFileName());
+            String month = DateUtil.format(fileInfo.getCreateTime(), DateTimePatternEnum.YYYYMM.getPattern());
+            //目标目录
+            String targetFolderName = FolderUtil.getProjectFolder() + Constants.FILE_FOLDER_FILE;
+            File targetFolder = new File(targetFolderName + "/" + month);
+            if (!targetFolder.exists()) {
+                targetFolder.mkdirs();
+            }
+
+            //真实文件名
+            String realFileName = currentUserFolderName + fileSuffix;
+            //真实文件路径
+            targetFilePath = targetFolder.getPath() + "/" + realFileName;
+            //合并文件
+            union(fileFolder.getPath(), targetFilePath, fileInfo.getFileName(), true);
+
+        } catch (Exception e) {
+            log.error("文件转码失败，文件Id:{},userId:{}", fileId, webUserDto.getUserId(), e);
+            transferSuccess = false;
+        } finally {
+            FileInfo updateInfo = new FileInfo();
+            updateInfo.setFileSize(new File(targetFilePath).length());
+            updateInfo.setFileCover(cover);
+            updateInfo.setStatus(transferSuccess ? FileStatusEnums.USING.getStatus() : FileStatusEnums.TRANSFER_FAIL.getStatus());
+            fileInfoMapper.updateFileStatusWithOldStatus(fileId, webUserDto.getUserId(), updateInfo, FileStatusEnums.TRANSFER.getStatus());
+        }
+    }
+
+    private void updateUserSpace(SessionWebUserDto webUserDto, Long totalSize) {
+        Integer count = userInfoMapper.updateUserSpace(webUserDto.getUserId(), totalSize, null);
+        if (count == 0) {
+            throw new BusinessException(ResponseCodeEnum.CODE_904);
+        }
+        UserSpaceDto spaceDto = redisComponent.getUserSpaceUse(webUserDto.getUserId());
+        spaceDto.setUseSpace(spaceDto.getUseSpace() + totalSize);
+        redisComponent.saveUserSpaceUse(webUserDto.getUserId(), spaceDto);
+    }
+
+    private String autoRename(String filePid, String userId, String fileName) {
+        FileInfoQuery fileInfoQuery = new FileInfoQuery();
+        fileInfoQuery.setUserId(userId);
+        fileInfoQuery.setFilePid(filePid);
+        fileInfoQuery.setDelFlag(FileDelFlagEnums.USING.getFlag());
+        fileInfoQuery.setFileName(fileName);
+        Integer count = this.fileInfoMapper.selectCount(fileInfoQuery);
+        if (count > 0) {
+            return StringTools.rename(fileName);
+        }
+
+        return fileName;
+    }
+
+    public static void union(String dirPath, String toFilePath, String fileName, boolean delSource) throws BusinessException {
+        File dir = new File(dirPath);
+        if (!dir.exists()) {
+            throw new BusinessException("目录不存在");
+        }
+        File fileList[] = dir.listFiles();
+        File targetFile = new File(toFilePath);
+        RandomAccessFile writeFile = null;
+        try {
+            writeFile = new RandomAccessFile(targetFile, "rw");
+            byte[] b = new byte[1024 * 10];
+            for (int i = 0; i < fileList.length; i++) {
+                int len = -1;
+                //创建读块文件的对象
+                File chunkFile = new File(dirPath + File.separator + i);
+                RandomAccessFile readFile = null;
+                try {
+                    readFile = new RandomAccessFile(chunkFile, "r");
+                    while ((len = readFile.read(b)) != -1) {
+                        writeFile.write(b, 0, len);
+                    }
+                } catch (Exception e) {
+                    log.error("合并分片失败", e);
+                    throw new BusinessException("合并文件失败");
+                } finally {
+                    readFile.close();
+                }
+            }
+        } catch (Exception e) {
+            log.error("合并文件:{}失败", fileName, e);
+            throw new BusinessException("合并文件" + fileName + "出错了");
+        } finally {
+            try {
+                if (null != writeFile) {
+                    writeFile.close();
+                }
+            } catch (IOException e) {
+                log.error("关闭流失败", e);
+            }
+            if (delSource) {
+                if (dir.exists()) {
+                    try {
+                        FileUtils.deleteDirectory(dir);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
         }

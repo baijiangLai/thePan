@@ -19,4 +19,10 @@ public interface FileInfoMapper {
     List<FileInfo> selectList(@Param("fileInfoQuery") FileInfoQuery fileInfoQuery);
 
     Integer selectCount(@Param("fileInfoQuery") FileInfoQuery fileInfoQuery);
+
+    Integer insert(@Param("fileInfo") FileInfo fileInfo);
+
+    FileInfo selectByFileIdAndUserId(@Param("fileId") String fileId, @Param("userId") String userId);
+
+    Integer updateFileStatusWithOldStatus(@Param("fileId") String fileId, @Param("userId") String userId, @Param("fileInfo") FileInfo fileInfo, @Param("status") Integer status);
 }

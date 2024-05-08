@@ -2,6 +2,7 @@ package com.thepan.utils;
 
 
 
+import cn.hutool.core.util.StrUtil;
 import com.thepan.entity.enums.VerifyRegexEnum;
 
 import java.io.File;
@@ -11,7 +12,7 @@ import java.util.regex.Pattern;
 public class VerifyUtils {
 
     public static boolean verify(String regex, String value) {
-        if (StringTools.isEmpty(value)) {
+        if (StrUtil.isEmpty(value)) {
             return false;
         }
         Pattern pattern = Pattern.compile(regex);

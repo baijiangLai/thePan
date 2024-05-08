@@ -37,4 +37,6 @@ public interface UserInfoMapper {
     Integer updateByQqOpenId(@Param("userInfo") UserInfo userInfo, @Param("qqOpenId") String qqOpenId);
 
     List<UserInfo> selectList(@Param("userInfoQuery")UserInfoQuery userInfoQuery);
+
+    Integer updateUserSpace(@Param("userId") String userId, @Param("useSpace") Long useSpace, @Param("totalSpace") Long totalSpace);
 }

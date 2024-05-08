@@ -16,4 +16,6 @@ public interface EmailCodeMapper {
     EmailCode selectByEmailAndCode(String email, String code);
 
     void disableEmailCode(String email);
+
+    Integer insert(@Param("emailCode") EmailCode emailCode);
 }

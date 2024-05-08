@@ -47,6 +47,18 @@ public class FileInfoController {
         return ResponseUtil.getSuccessResponseVO(ResponseUtil.convert2PaginationVO(result, FileInfoVO.class));
     }
 
+    /**
+     *
+     * @param session
+     * @param fileId
+     * @param file
+     * @param fileName
+     * @param filePid
+     * @param fileMd5
+     * @param chunkIndex 切片索引
+     * @param chunks    总共有多少切片
+     * @return
+     */
     @RequestMapping("/uploadFile")
     @GlobalInterceptor
     public ResponseVO uploadFile(HttpSession session,
