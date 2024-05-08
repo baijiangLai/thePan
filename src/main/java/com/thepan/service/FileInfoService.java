@@ -8,4 +8,5 @@ package com.thepan.service;
 public interface FileInfoService {
 
 
+    Long getUserUseSpace(String userId);
 }

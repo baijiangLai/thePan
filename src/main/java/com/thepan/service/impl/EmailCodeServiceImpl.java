@@ -4,7 +4,7 @@ package com.thepan.service.impl;
 import com.thepan.config.AppConfig;
 import com.thepan.constants.Constants;
 import com.thepan.entity.dao.EmailCode;
-import com.thepan.entity.dao.SysSettingsDto;
+import com.thepan.entity.dto.SysSettingsDto;
 import com.thepan.entity.dao.UserInfo;
 import com.thepan.exception.BusinessException;
 import com.thepan.mappers.EmailCodeMapper;

@@ -1,42 +1,62 @@
 package com.thepan.service.impl;
 
 
+import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONUtil;
+import com.thepan.config.AdminProperties;
+import com.thepan.config.QqProperties;
 import com.thepan.constants.Constants;
-import com.thepan.entity.dao.SessionWebUserDto;
+import com.thepan.entity.dto.QQInfoDto;
+import com.thepan.entity.dto.SessionWebUserDto;
 import com.thepan.entity.dao.UserInfo;
-import com.thepan.entity.dao.UserSpaceDto;
+import com.thepan.entity.dto.UserSpaceDto;
 import com.thepan.enums.UserStatusEnum;
 import com.thepan.exception.BusinessException;
 import com.thepan.mappers.UserInfoMapper;
 import com.thepan.service.EmailCodeService;
+import com.thepan.service.FileInfoService;
 import com.thepan.service.UserInfoService;
-import com.thepan.utils.RedisComponent;
-import com.thepan.utils.RedisUtil;
-import com.thepan.utils.StringTools;
+import com.thepan.utils.*;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.annotation.Resource;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.Date;
+import java.util.Map;
 
 /**
  * 用户信息 业务接口实现
  */
-@Service("userInfoService")
+@Service
+@Slf4j
 public class UserInfoServiceImpl implements UserInfoService {
-    @Autowired
-    UserInfoMapper userInfoMapper;
-
-    @Autowired
-    RedisUtil redisUtil;
+    @Resource
+    private UserInfoMapper userInfoMapper;
 
 
-    @Autowired
-    RedisComponent redisComponent;
 
-    @Autowired
-    EmailCodeService emailCodeService;
+    @Resource
+    private RedisComponent redisComponent;
+
+    @Resource
+    private EmailCodeService emailCodeService;
+
+    @Resource
+    private AdminProperties adminProperties;
+
+    @Resource
+    private FileInfoService fileInfoService;
+
+
+    @Resource
+    private QqProperties qqProperties;
     /**
      * 注册账号
      * 1. 验证邮箱是否已注册以及昵称是否重复
@@ -76,7 +96,7 @@ public class UserInfoServiceImpl implements UserInfoService {
         // 邮箱初始化总空间需要从redis里面取
         userInfo.setTotalSpace(redisComponent.getSysSettingsDto().getUserInitUseSpace() * Constants.MB);
         userInfo.setUseSpace(0L);
-        Integer rows = userInfoMapper.insert(userInfo);
+        Integer rows = userInfoMapper.insertUserInfo(userInfo);
         if (rows != 1) {
             throw new BusinessException("注册失败");
         }
@@ -101,8 +121,7 @@ public class UserInfoServiceImpl implements UserInfoService {
 
         //用户空间
         UserSpaceDto userSpaceDto = new UserSpaceDto();
-        // TODO: 后续需要计算出使用了的存储空间大小
-        userSpaceDto.setUseSpace(0L);
+        userSpaceDto.setUseSpace(fileInfoService.getUserUseSpace(sessionWebUserDto.getUserId()));
         userSpaceDto.setTotalSpace(userInfo.getTotalSpace());
         redisComponent.saveUserSpaceUse(userInfo.getUserId(), userSpaceDto);
         return sessionWebUserDto;
@@ -125,5 +144,137 @@ public class UserInfoServiceImpl implements UserInfoService {
 
     public void updateUserInfoByUserId(UserInfo bean, String userId) {
         userInfoMapper.updateByUserId(bean, userId);
+    }
+
+    @Override
+    public SessionWebUserDto qqLogin(String code) {
+        String accessToken = getQQAccessToken(code);
+        String openId = getQQOpenId(accessToken);
+        UserInfo user = userInfoMapper.selectByQqOpenId(openId);
+        String avatar = null;
+
+        if (null == user) {
+            QQInfoDto qqInfo = getQQUserInfo(accessToken, openId);
+            user = new UserInfo();
+
+            String nickName = qqInfo.getNickname();
+            nickName = nickName.length() > Constants.LENGTH_150 ? nickName.substring(0, 150) : nickName;
+            avatar = StrUtil.isEmpty(qqInfo.getFigureurl_qq_2()) ? qqInfo.getFigureurl_qq_1() : qqInfo.getFigureurl_qq_2();
+            Date curDate = new Date();
+
+            //上传头像到本地
+            user.setQqOpenId(openId);
+            user.setJoinTime(curDate);
+            user.setNickName(nickName);
+            user.setQqAvatar(avatar);
+            user.setUserId(StringTools.getRandomString(Constants.LENGTH_10));
+            user.setLastLoginTime(curDate);
+            user.setStatus(UserStatusEnum.ENABLE.getStatus());
+            user.setUseSpace(0L);
+            user.setTotalSpace(redisComponent.getSysSettingsDto().getUserInitUseSpace() * Constants.MB);
+            userInfoMapper.insertUserInfo(user);
+        } else {
+            UserInfo updateInfo = new UserInfo();
+            updateInfo.setLastLoginTime(new Date());
+            avatar = user.getQqAvatar();
+            userInfoMapper.updateByQqOpenId(updateInfo, openId);
+        }
+        if (UserStatusEnum.DISABLE.getStatus().equals(user.getStatus())) {
+            throw new BusinessException("账号被禁用无法登录");
+        }
+        SessionWebUserDto sessionWebUserDto = new SessionWebUserDto();
+        sessionWebUserDto.setUserId(user.getUserId());
+        sessionWebUserDto.setNickName(user.getNickName());
+        sessionWebUserDto.setAvatar(avatar);
+        String[] adminEmailArr = adminProperties.getAdminEmails().split(",");
+
+        if (ArrayUtils.contains(adminEmailArr, user.getEmail() == null ? "" : user.getEmail())) {
+            sessionWebUserDto.setAdmin(true);
+        } else {
+            sessionWebUserDto.setAdmin(false);
+        }
+
+        UserSpaceDto userSpaceDto = new UserSpaceDto();
+        userSpaceDto.setUseSpace(fileInfoService.getUserUseSpace(user.getUserId()));
+        userSpaceDto.setTotalSpace(user.getTotalSpace());
+        redisComponent.saveUserSpaceUse(user.getUserId(), userSpaceDto);
+        return sessionWebUserDto;
+    }
+
+    private QQInfoDto getQQUserInfo(String accessToken, String qqOpenId) throws BusinessException {
+        String url = String.format(qqProperties.getQqUrlUserInfo(), accessToken, qqProperties.getQqAppId(), qqOpenId);
+        String response = OKHttpUtils.getRequest(url);
+        if (StringUtils.isNotBlank(response)) {
+            QQInfoDto qqInfo = JSONUtil.toBean(response, QQInfoDto.class);
+            if (qqInfo.getRet() != 0) {
+                log.error("qqInfo:{}", response);
+                throw new BusinessException("调qq接口获取用户信息异常");
+            }
+            return qqInfo;
+        }
+        throw new BusinessException("调qq接口获取用户信息异常");
+    }
+
+    private String getQQOpenId(String accessToken) throws BusinessException {
+        // 获取openId
+        String url = String.format(qqProperties.getQqUrlOpenId(), accessToken);
+        String openIDResult = OKHttpUtils.getRequest(url);
+        String tmpJson = getQQResp(openIDResult);
+        if (tmpJson == null) {
+            log.error("调qq接口获取openID失败:tmpJson{}", tmpJson);
+            throw new BusinessException("调qq接口获取openID失败");
+        }
+
+        Map map = JSONUtil.toBean(tmpJson, Map.class);
+        if (map == null || map.containsKey(Constants.VIEW_OBJ_RESULT_KEY)) {
+            log.error("调qq接口获取openID失败:{}", map);
+            throw new BusinessException("调qq接口获取openID失败");
+        }
+        return String.valueOf(map.get("openid"));
+    }
+
+    private String getQQResp(String result) {
+        if (StrUtil.isNotEmpty(result)) {
+            int pos = result.indexOf("callback");
+            if (pos != -1) {
+                int start = result.indexOf("(");
+                int end = result.lastIndexOf(")");
+                String jsonStr = result.substring(start + 1, end - 1);
+                return jsonStr;
+            }
+        }
+        return null;
+    }
+
+    private String getQQAccessToken(String code) {
+        /**
+         * 返回结果是字符串
+         * access_token=*&expires_in=7776000&refresh_token=*
+         * 返回错误 callback({UcWebConstants.VIEW_OBJ_RESULT_KEY:111,error_description:"error msg"})
+         */
+        String accessToken = null;
+        String url = null;
+        try {
+            url = String.format(qqProperties.getQqUrlAccessToken(), qqProperties.getQqAppId(), qqProperties.getQqAppKey(), code,
+                    URLEncoder.encode(qqProperties.getQqUrlRedirect(), "utf-8"));
+        } catch (UnsupportedEncodingException e) {
+            log.error("encode失败");
+        }
+        String response = OKHttpUtils.getRequest(url);
+        if (response == null || response.indexOf(Constants.VIEW_OBJ_RESULT_KEY) != -1) {
+            log.error("获取qqToken失败:{}", response);
+            throw new BusinessException("获取qqToken失败");
+        }
+        String[] params = response.split("&");
+
+        if (params != null && params.length > 0) {
+            for (String p : params) {
+                if (p.indexOf("access_token") != -1) {
+                    accessToken = p.split("=")[1];
+                    break;
+                }
+            }
+        }
+        return accessToken;
     }
 }

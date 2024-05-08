@@ -1,8 +1,8 @@
 package com.thepan.utils;
 
 import com.thepan.constants.Constants;
-import com.thepan.entity.dao.SysSettingsDto;
-import com.thepan.entity.dao.UserSpaceDto;
+import com.thepan.entity.dto.SysSettingsDto;
+import com.thepan.entity.dto.UserSpaceDto;
 import com.thepan.mappers.FileInfoMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;

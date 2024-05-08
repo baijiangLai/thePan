@@ -1,4 +1,4 @@
-package com.thepan.entity.dao;
+package com.thepan.entity.dto;
 
 import lombok.Data;
 

@@ -10,4 +10,8 @@ import org.springframework.stereotype.Service;
 @Service("fileInfoService")
 public class FileInfoServiceImpl implements FileInfoService {
 
+    @Override
+    public Long getUserUseSpace(String userId) {
+        return null;
+    }
 }

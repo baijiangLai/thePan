@@ -1,4 +1,4 @@
-package com.thepan.vo;
+package com.thepan.entity.vo;
 
 
 public class ResponseVO<T> {

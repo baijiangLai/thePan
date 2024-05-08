@@ -22,9 +22,14 @@ public interface UserInfoMapper extends BaseMapper {
     UserInfo selectByNickname(@Param("nickName") String nickName);
 
 
-    Integer updateByUserId(@Param("bean") UserInfo userInfo, @Param("userId") String userId);
+    Integer updateByUserId(@Param("userInfo") UserInfo userInfo, @Param("userId") String userId);
 
 
-    Integer updateByEmail(@Param("bean") UserInfo userInfo, @Param("email") String email);
+    Integer updateByEmail(@Param("userInfo") UserInfo userInfo, @Param("email") String email);
 
+    UserInfo selectByQqOpenId(@Param("qqOpenId") String qqOpenId);
+
+    Integer insertUserInfo(@Param("userInfo") UserInfo userInfo);
+
+    Integer updateByQqOpenId(@Param("userInfo") UserInfo userInfo, @Param("qqOpenId") String qqOpenId);
 }

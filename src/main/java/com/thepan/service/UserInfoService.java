@@ -1,7 +1,7 @@
 package com.thepan.service;
 
 
-import com.thepan.entity.dao.SessionWebUserDto;
+import com.thepan.entity.dto.SessionWebUserDto;
 import com.thepan.entity.dao.UserInfo;
 
 /**
@@ -16,4 +16,6 @@ public interface UserInfoService {
     void resetPwd(String email, String password, String emailCode);
 
     void updateUserInfoByUserId(UserInfo userInfo, String userId);
+
+    SessionWebUserDto qqLogin(String code);
 }

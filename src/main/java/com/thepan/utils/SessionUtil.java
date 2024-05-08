@@ -1,7 +1,7 @@
 package com.thepan.utils;
 
 import com.thepan.constants.Constants;
-import com.thepan.entity.dao.SessionWebUserDto;
+import com.thepan.entity.dto.SessionWebUserDto;
 
 import javax.servlet.http.HttpSession;
 

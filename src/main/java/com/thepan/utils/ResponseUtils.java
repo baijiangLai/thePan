@@ -1,7 +1,7 @@
 package com.thepan.utils;
 
 import com.thepan.enums.ResponseCodeEnum;
-import com.thepan.vo.ResponseVO;
+import com.thepan.entity.vo.ResponseVO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

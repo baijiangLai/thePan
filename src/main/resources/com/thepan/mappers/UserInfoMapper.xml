@@ -35,112 +35,38 @@
         where nick_name =#{nickName}
     </select>
 
-    <insert id="insert">
-        INSERT INTO user_info
-        <trim prefix="(" suffix=")" suffixOverrides=",">
-            <if test="bean.userId != null">
-                user_id,
-            </if>
-            <if test="bean.nickName != null">
-                nick_name,
-            </if>
-            <if test="bean.email != null">
-                email,
-            </if>
-            <if test="bean.qqOpenId != null">
-                qq_open_id,
-            </if>
-            <if test="bean.qqAvatar != null">
-                qq_avatar,
-            </if>
-            <if test="bean.password != null">
-                password,
-            </if>
-            <if test="bean.joinTime != null">
-                join_time,
-            </if>
-            <if test="bean.lastLoginTime != null">
-                last_login_time,
-            </if>
-            <if test="bean.status != null">
-                status,
-            </if>
-            <if test="bean.useSpace != null">
-                use_space,
-            </if>
-            <if test="bean.totalSpace != null">
-                total_space,
-            </if>
-        </trim>
-        <trim prefix="values (" suffix=")" suffixOverrides=",">
-            <if test="bean.userId!=null">
-                #{bean.userId},
-            </if>
-            <if test="bean.nickName!=null">
-                #{bean.nickName},
-            </if>
-            <if test="bean.email!=null">
-                #{bean.email},
-            </if>
-            <if test="bean.qqOpenId!=null">
-                #{bean.qqOpenId},
-            </if>
-            <if test="bean.qqAvatar!=null">
-                #{bean.qqAvatar},
-            </if>
-            <if test="bean.password!=null">
-                #{bean.password},
-            </if>
-            <if test="bean.joinTime!=null">
-                #{bean.joinTime},
-            </if>
-            <if test="bean.lastLoginTime!=null">
-                #{bean.lastLoginTime},
-            </if>
-            <if test="bean.status!=null">
-                #{bean.status},
-            </if>
-            <if test="bean.useSpace!=null">
-                #{bean.useSpace},
-            </if>
-            <if test="bean.totalSpace!=null">
-                #{bean.totalSpace},
-            </if>
-        </trim>
-    </insert>
-
     <update id="updateByUserId" parameterType="com.thepan.entity.dao.UserInfo">
         UPDATE user_info
         <set>
-            <if test="bean.nickName != null">
-                nick_name = #{bean.nickName},
+            <if test="userInfo.nickName != null">
+                nick_name = #{userInfo.nickName},
             </if>
-            <if test="bean.email != null">
-                email = #{bean.email},
+            <if test="userInfo.email != null">
+                email = #{userInfo.email},
             </if>
-            <if test="bean.qqOpenId != null">
-                qq_open_id = #{bean.qqOpenId},
+            <if test="userInfo.qqOpenId != null">
+                qq_open_id = #{userInfo.qqOpenId},
             </if>
-            <if test="bean.qqAvatar != null">
-                qq_avatar = #{bean.qqAvatar},
+            <if test="userInfo.qqAvatar != null">
+                qq_avatar = #{userInfo.qqAvatar},
             </if>
-            <if test="bean.password != null">
-                password = #{bean.password},
+            <if test="userInfo.password != null">
+                password = #{userInfo.password},
             </if>
-            <if test="bean.joinTime != null">
-                join_time = #{bean.joinTime},
+            <if test="userInfo.joinTime != null">
+                join_time = #{userInfo.joinTime},
             </if>
-            <if test="bean.lastLoginTime != null">
-                last_login_time = #{bean.lastLoginTime},
+            <if test="userInfo.lastLoginTime != null">
+                last_login_time = #{userInfo.lastLoginTime},
             </if>
-            <if test="bean.status != null">
-                status = #{bean.status},
+            <if test="userInfo.status != null">
+                status = #{userInfo.status},
             </if>
-            <if test="bean.useSpace != null">
-                use_space = #{bean.useSpace},
+            <if test="userInfo.useSpace != null">
+                use_space = #{userInfo.useSpace},
             </if>
-            <if test="bean.totalSpace != null">
-                total_space = #{bean.totalSpace},
+            <if test="userInfo.totalSpace != null">
+                total_space = #{userInfo.totalSpace},
             </if>
         </set>
         where user_id=#{userId}
@@ -150,38 +76,166 @@
     <update id="updateByEmail" parameterType="com.thepan.entity.dao.UserInfo">
         UPDATE user_info
         <set>
-            <if test="bean.userId != null">
-                user_id = #{bean.userId},
+            <if test="userInfo.userId != null">
+                user_id = #{userInfo.userId},
             </if>
-            <if test="bean.nickName != null">
-                nick_name = #{bean.nickName},
+            <if test="userInfo.nickName != null">
+                nick_name = #{userInfo.nickName},
             </if>
-            <if test="bean.qqOpenId != null">
-                qq_open_id = #{bean.qqOpenId},
+            <if test="userInfo.qqOpenId != null">
+                qq_open_id = #{userInfo.qqOpenId},
             </if>
-            <if test="bean.qqAvatar != null">
-                qq_avatar = #{bean.qqAvatar},
+            <if test="userInfo.qqAvatar != null">
+                qq_avatar = #{userInfo.qqAvatar},
             </if>
-            <if test="bean.password != null">
-                password = #{bean.password},
+            <if test="userInfo.password != null">
+                password = #{userInfo.password},
             </if>
-            <if test="bean.joinTime != null">
-                join_time = #{bean.joinTime},
+            <if test="userInfo.joinTime != null">
+                join_time = #{userInfo.joinTime},
             </if>
-            <if test="bean.lastLoginTime != null">
-                last_login_time = #{bean.lastLoginTime},
+            <if test="userInfo.lastLoginTime != null">
+                last_login_time = #{userInfo.lastLoginTime},
             </if>
-            <if test="bean.status != null">
-                status = #{bean.status},
+            <if test="userInfo.status != null">
+                status = #{userInfo.status},
             </if>
-            <if test="bean.useSpace != null">
-                use_space = #{bean.useSpace},
+            <if test="userInfo.useSpace != null">
+                use_space = #{userInfo.useSpace},
             </if>
-            <if test="bean.totalSpace != null">
-                total_space = #{bean.totalSpace},
+            <if test="userInfo.totalSpace != null">
+                total_space = #{userInfo.totalSpace},
             </if>
         </set>
         where email=#{email}
+    </update>
+
+
+    <select id="selectByQqOpenId" resultType="com.thepan.entity.dao.UserInfo">
+        select user_id,
+               nick_name,
+               email,
+               qq_open_id,
+               qq_avatar,
+               password,
+               join_time,
+               last_login_time,
+               status,
+               use_space,
+               total_space
+        from user_info
+        where qq_open_id =#{qqOpenId}
+    </select>
+    
+    <insert id="insertUserInfo">
+        INSERT INTO user_info
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="userInfo.userId != null">
+                user_id,
+            </if>
+            <if test="userInfo.nickName != null">
+                nick_name,
+            </if>
+            <if test="userInfo.email != null">
+                email,
+            </if>
+            <if test="userInfo.qqOpenId != null">
+                qq_open_id,
+            </if>
+            <if test="userInfo.qqAvatar != null">
+                qq_avatar,
+            </if>
+            <if test="userInfo.password != null">
+                password,
+            </if>
+            <if test="userInfo.joinTime != null">
+                join_time,
+            </if>
+            <if test="userInfo.lastLoginTime != null">
+                last_login_time,
+            </if>
+            <if test="userInfo.status != null">
+                status,
+            </if>
+            <if test="userInfo.useSpace != null">
+                use_space,
+            </if>
+            <if test="userInfo.totalSpace != null">
+                total_space,
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="userInfo.userId!=null">
+                #{userInfo.userId},
+            </if>
+            <if test="userInfo.nickName!=null">
+                #{userInfo.nickName},
+            </if>
+            <if test="userInfo.email!=null">
+                #{userInfo.email},
+            </if>
+            <if test="userInfo.qqOpenId!=null">
+                #{userInfo.qqOpenId},
+            </if>
+            <if test="userInfo.qqAvatar!=null">
+                #{userInfo.qqAvatar},
+            </if>
+            <if test="userInfo.password!=null">
+                #{userInfo.password},
+            </if>
+            <if test="userInfo.joinTime!=null">
+                #{userInfo.joinTime},
+            </if>
+            <if test="userInfo.lastLoginTime!=null">
+                #{userInfo.lastLoginTime},
+            </if>
+            <if test="userInfo.status!=null">
+                #{userInfo.status},
+            </if>
+            <if test="userInfo.useSpace!=null">
+                #{userInfo.useSpace},
+            </if>
+            <if test="userInfo.totalSpace!=null">
+                #{userInfo.totalSpace},
+            </if>
+        </trim>
+    </insert>
+
+    <update id="updateByQqOpenId" parameterType="com.thepan.entity.dao.UserInfo">
+        UPDATE user_info
+        <set>
+            <if test="userInfo.userId != null">
+                user_id = #{userInfo.userId},
+            </if>
+            <if test="userInfo.nickName != null">
+                nick_name = #{userInfo.nickName},
+            </if>
+            <if test="userInfo.email != null">
+                email = #{userInfo.email},
+            </if>
+            <if test="userInfo.qqAvatar != null">
+                qq_avatar = #{userInfo.qqAvatar},
+            </if>
+            <if test="userInfo.password != null">
+                password = #{userInfo.password},
+            </if>
+            <if test="userInfo.joinTime != null">
+                join_time = #{userInfo.joinTime},
+            </if>
+            <if test="userInfo.lastLoginTime != null">
+                last_login_time = #{userInfo.lastLoginTime},
+            </if>
+            <if test="userInfo.status != null">
+                status = #{userInfo.status},
+            </if>
+            <if test="userInfo.useSpace != null">
+                use_space = #{userInfo.useSpace},
+            </if>
+            <if test="userInfo.totalSpace != null">
+                total_space = #{userInfo.totalSpace},
+            </if>
+        </set>
+        where qq_open_id=#{qqOpenId}
     </update>
 
 </mapper>
