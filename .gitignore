@@ -40,4 +40,4 @@ build/
 
 /syt/**
 
-log.path_IS_UNDEFINED/
+logs/
