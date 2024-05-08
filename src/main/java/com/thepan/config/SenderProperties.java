@@ -4,9 +4,9 @@ import lombok.Data;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-@Component("AppConfig")
+@Component
 @Data
-public class AppConfig {
+public class SenderProperties {
 
     /**
      * 发送人

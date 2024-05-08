@@ -3,6 +3,9 @@ package com.thepan.service;
 
 import com.thepan.entity.dto.SessionWebUserDto;
 import com.thepan.entity.dao.UserInfo;
+import com.thepan.entity.query.UserInfoQuery;
+
+import java.util.List;
 
 /**
  * 用户信息 业务接口
@@ -18,4 +21,6 @@ public interface UserInfoService {
     void updateUserInfoByUserId(UserInfo userInfo, String userId);
 
     SessionWebUserDto qqLogin(String code);
+
+    List<UserInfo> findListByParam(UserInfoQuery userInfoQuery);
 }

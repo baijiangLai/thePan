@@ -8,7 +8,7 @@ import com.thepan.config.QqProperties;
 import com.thepan.constants.Constants;
 import com.thepan.entity.dto.SessionWebUserDto;
 import com.thepan.entity.dao.UserInfo;
-import com.thepan.enums.VerifyRegexEnum;
+import com.thepan.entity.enums.VerifyRegexEnum;
 import com.thepan.exception.BusinessException;
 import com.thepan.service.EmailCodeService;
 import com.thepan.service.UserInfoService;

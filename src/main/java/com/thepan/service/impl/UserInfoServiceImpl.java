@@ -1,7 +1,6 @@
 package com.thepan.service.impl;
 
 
-import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.thepan.config.AdminProperties;
@@ -11,7 +10,8 @@ import com.thepan.entity.dto.QQInfoDto;
 import com.thepan.entity.dto.SessionWebUserDto;
 import com.thepan.entity.dao.UserInfo;
 import com.thepan.entity.dto.UserSpaceDto;
-import com.thepan.enums.UserStatusEnum;
+import com.thepan.entity.enums.UserStatusEnum;
+import com.thepan.entity.query.UserInfoQuery;
 import com.thepan.exception.BusinessException;
 import com.thepan.mappers.UserInfoMapper;
 import com.thepan.service.EmailCodeService;
@@ -21,7 +21,6 @@ import com.thepan.utils.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +28,7 @@ import javax.annotation.Resource;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -39,8 +39,6 @@ import java.util.Map;
 public class UserInfoServiceImpl implements UserInfoService {
     @Resource
     private UserInfoMapper userInfoMapper;
-
-
 
     @Resource
     private RedisComponent redisComponent;
@@ -276,5 +274,10 @@ public class UserInfoServiceImpl implements UserInfoService {
             }
         }
         return accessToken;
+    }
+
+    @Override
+    public List<UserInfo> findListByParam(UserInfoQuery userInfoQuery) {
+        return userInfoMapper.selectList(userInfoQuery);
     }
 }

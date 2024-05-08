@@ -2,14 +2,17 @@ package com.thepan.mappers;
 
 
 import com.thepan.entity.dao.UserInfo;
+import com.thepan.entity.query.UserInfoQuery;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
+
+import java.util.List;
 
 /**
  * 用户信息 数据库操作接口
  */
 @Mapper
-public interface UserInfoMapper extends BaseMapper {
+public interface UserInfoMapper {
 
     /**
      * 根据Email获取对象
@@ -32,4 +35,6 @@ public interface UserInfoMapper extends BaseMapper {
     Integer insertUserInfo(@Param("userInfo") UserInfo userInfo);
 
     Integer updateByQqOpenId(@Param("userInfo") UserInfo userInfo, @Param("qqOpenId") String qqOpenId);
+
+    List<UserInfo> selectList(@Param("userInfoQuery")UserInfoQuery userInfoQuery);
 }

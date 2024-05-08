@@ -2,7 +2,7 @@ package com.thepan.entity.dao;
 
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.thepan.enums.DateTimePatternEnum;
+import com.thepan.entity.enums.DateTimePatternEnum;
 import com.thepan.utils.DateUtil;
 import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;

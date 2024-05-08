@@ -3,6 +3,116 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.thepan.mappers.UserInfoMapper">
 
+    <resultMap id="base_result_map" type="com.thepan.entity.dao.UserInfo">
+        <!--用户ID-->
+        <result column="user_id" property="userId"/>
+        <!--昵称-->
+        <result column="nick_name" property="nickName"/>
+        <!--邮箱-->
+        <result column="email" property="email"/>
+        <!--qqOpenID-->
+        <result column="qq_open_id" property="qqOpenId"/>
+        <!--qq头像-->
+        <result column="qq_avatar" property="qqAvatar"/>
+        <!--密码-->
+        <result column="password" property="password"/>
+        <!--加入时间-->
+        <result column="join_time" property="joinTime"/>
+        <!--最后登录时间-->
+        <result column="last_login_time" property="lastLoginTime"/>
+        <!--0:禁用 1:正常-->
+        <result column="status" property="status"/>
+        <!--使用空间单位byte-->
+        <result column="use_space" property="useSpace"/>
+        <!--总空间-->
+        <result column="total_space" property="totalSpace"/>
+    </resultMap>
+
+    <!-- 通用查询结果列-->
+    <sql id="base_column_list">
+        user_id, nick_name, email, qq_open_id, qq_avatar,
+        password, join_time, last_login_time, status, use_space, total_space
+    </sql>
+
+    <sql id="base_condition_filed">
+        <if test="userInfoQuery.userId != null and userInfoQuery.userId!=''">
+            and user_id = #{userInfoQuery.userId}
+        </if>
+        <if test="userInfoQuery.nickName != null and userInfoQuery.nickName!=''">
+            and nick_name = #{userInfoQuery.nickName}
+        </if>
+        <if test="userInfoQuery.email != null and userInfoQuery.email!=''">
+            and email = #{userInfoQuery.email}
+        </if>
+        <if test="userInfoQuery.qqOpenId != null and userInfoQuery.qqOpenId!=''">
+            and qq_open_id = #{userInfoQuery.qqOpenId}
+        </if>
+        <if test="userInfoQuery.qqAvatar != null and userInfoQuery.qqAvatar!=''">
+            and qq_avatar = #{userInfoQuery.qqAvatar}
+        </if>
+        <if test="userInfoQuery.password != null and userInfoQuery.password!=''">
+            and password = #{userInfoQuery.password}
+        </if>
+        <if test="userInfoQuery.joinTime != null and userInfoQuery.joinTime!=''">
+            <![CDATA[ and  join_time=str_to_date(#{userInfoQuery.joinTime}, '%Y-%m-%d') ]]>
+        </if>
+        <if test="userInfoQuery.lastLoginTime != null and userInfoQuery.lastLoginTime!=''">
+            <![CDATA[ and  last_login_time=str_to_date(#{userInfoQuery.lastLoginTime}, '%Y-%m-%d') ]]>
+        </if>
+        <if test="userInfoQuery.status != null">
+            and status = #{userInfoQuery.status}
+        </if>
+        <if test="userInfoQuery.useSpace != null">
+            and use_space = #{userInfoQuery.useSpace}
+        </if>
+        <if test="userInfoQuery.totalSpace != null">
+            and total_space = #{userInfoQuery.totalSpace}
+        </if>
+    </sql>
+    <!-- 通用条件列-->
+    <sql id="base_condition">
+        <where>
+            <include refid="base_condition_filed"/>
+        </where>
+    </sql>
+
+    <!-- 通用查询条件列-->
+    <sql id="query_condition">
+        <where>
+            <include refid="base_condition_filed"/>
+            <if test="userInfoQuery.userIdFuzzy!= null  and userInfoQuery.userIdFuzzy!=''">
+                and user_id like concat('%', #{userInfoQuery.userIdFuzzy}, '%')
+            </if>
+            <if test="userInfoQuery.nickNameFuzzy!= null  and userInfoQuery.nickNameFuzzy!=''">
+                and nick_name like concat('%', #{userInfoQuery.nickNameFuzzy}, '%')
+            </if>
+            <if test="userInfoQuery.emailFuzzy!= null  and userInfoQuery.emailFuzzy!=''">
+                and email like concat('%', #{userInfoQuery.emailFuzzy}, '%')
+            </if>
+            <if test="userInfoQuery.qqOpenIdFuzzy!= null  and userInfoQuery.qqOpenIdFuzzy!=''">
+                and qq_open_id like concat('%', #{userInfoQuery.qqOpenIdFuzzy}, '%')
+            </if>
+            <if test="userInfoQuery.qqAvatarFuzzy!= null  and userInfoQuery.qqAvatarFuzzy!=''">
+                and qq_avatar like concat('%', #{userInfoQuery.qqAvatarFuzzy}, '%')
+            </if>
+            <if test="userInfoQuery.passwordFuzzy!= null  and userInfoQuery.passwordFuzzy!=''">
+                and password like concat('%', #{userInfoQuery.passwordFuzzy}, '%')
+            </if>
+            <if test="userInfoQuery.joinTimeStart!= null and userInfoQuery.joinTimeStart!=''">
+                <![CDATA[ and  join_time>=str_to_date(#{userInfoQuery.joinTimeStart}, '%Y-%m-%d') ]]>
+            </if>
+            <if test="userInfoQuery.joinTimeEnd!= null and userInfoQuery.joinTimeEnd!=''">
+                <![CDATA[ and  join_time< date_sub(str_to_date(#{userInfoQuery.joinTimeEnd},'%Y-%m-%d'),interval -1 day) ]]>
+            </if>
+            <if test="userInfoQuery.lastLoginTimeStart!= null and userInfoQuery.lastLoginTimeStart!=''">
+                <![CDATA[ and  last_login_time>=str_to_date(#{userInfoQuery.lastLoginTimeStart}, '%Y-%m-%d') ]]>
+            </if>
+            <if test="userInfoQuery.lastLoginTimeEnd!= null and userInfoQuery.lastLoginTimeEnd!=''">
+                <![CDATA[ and  last_login_time< date_sub(str_to_date(#{userInfoQuery.lastLoginTimeEnd},'%Y-%m-%d'),interval -1 day) ]]>
+            </if>
+        </where>
+    </sql>
+
     <select id="selectByEmail" resultType="com.thepan.entity.dao.UserInfo">
         select user_id,
                nick_name,
@@ -126,7 +236,7 @@
         from user_info
         where qq_open_id =#{qqOpenId}
     </select>
-    
+
     <insert id="insertUserInfo">
         INSERT INTO user_info
         <trim prefix="(" suffix=")" suffixOverrides=",">
@@ -237,5 +347,18 @@
         </set>
         where qq_open_id=#{qqOpenId}
     </update>
+
+    <select id="selectList" resultMap="base_result_map">
+        SELECT
+        <include refid="base_column_list"/>
+        FROM user_info
+        <include refid="query_condition"/>
+        <if test="userInfoQuery.orderBy!=null">
+            order by ${userInfoQuery.orderBy}
+        </if>
+        <if test="userInfoQuery.simplePage!=null">
+            limit #{userInfoQuery.simplePage.start},#{userInfoQuery.simplePage.end}
+        </if>
+    </select>
 
 </mapper>

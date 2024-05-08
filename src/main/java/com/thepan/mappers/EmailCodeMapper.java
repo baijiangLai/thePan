@@ -9,7 +9,7 @@ import org.apache.ibatis.annotations.Param;
  * 邮箱验证码 数据库操作接口
  */
 @Mapper
-public interface EmailCodeMapper extends BaseMapper {
+public interface EmailCodeMapper {
 
     void disableCheckCode(@Param("email") String email);
 

@@ -1,7 +1,7 @@
 package com.thepan.service.impl;
 
 
-import com.thepan.config.AppConfig;
+import com.thepan.config.SenderProperties;
 import com.thepan.constants.Constants;
 import com.thepan.entity.dao.EmailCode;
 import com.thepan.entity.dto.SysSettingsDto;
@@ -34,7 +34,7 @@ public class EmailCodeServiceImpl implements EmailCodeService {
 
 
     @Autowired
-    private AppConfig appConfig;
+    private SenderProperties senderProperties;
 
     @Autowired
     private RedisComponent redisComponent;
@@ -64,7 +64,7 @@ public class EmailCodeServiceImpl implements EmailCodeService {
         String code = StringTools.getRandomNumber(Constants.LENGTH_5);
         // 3. 使用EmailUtil发送验证码
         SysSettingsDto sysSettingsDto = redisComponent.getSysSettingsDto();
-        EmailUtil.sendEmailUtil(appConfig.getSendUserName(),email,sysSettingsDto.getRegisterEmailTitle(),String.format(sysSettingsDto.getRegisterEmailContent(),code));
+        EmailUtil.sendEmailUtil(senderProperties.getSendUserName(),email,sysSettingsDto.getRegisterEmailTitle(),String.format(sysSettingsDto.getRegisterEmailContent(),code));
         // 4. 将验证码相关信息存入redis，也可将验证码存入数据库，这里两种方法都试一下
         redisUtil.set(Constants.CHECK_CODE_KEY_EMAIL,code);
         redisUtil.set(Constants.CREATE_TIME,new Date());

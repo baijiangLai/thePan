@@ -1,5 +1,5 @@
 package com.thepan.annotation;
-import com.thepan.enums.VerifyRegexEnum;
+import com.thepan.entity.enums.VerifyRegexEnum;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

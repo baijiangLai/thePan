@@ -2,19 +2,23 @@ package com.thepan.aspect;
 
 import com.thepan.annotation.GlobalInterceptor;
 import com.thepan.annotation.VerifyParam;
-import com.thepan.config.AppConfig;
-import com.thepan.enums.ResponseCodeEnum;
+import com.thepan.config.SenderProperties;
+import com.thepan.constants.Constants;
+import com.thepan.entity.dao.UserInfo;
+import com.thepan.entity.dto.SessionWebUserDto;
+import com.thepan.entity.enums.ResponseCodeEnum;
+import com.thepan.entity.query.UserInfoQuery;
 import com.thepan.exception.BusinessException;
 import com.thepan.service.UserInfoService;
+import com.thepan.utils.SessionUtil;
 import com.thepan.utils.StringTools;
 import com.thepan.utils.VerifyUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
 import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -32,9 +36,9 @@ import java.util.List;
  */
 @Component("operationAspect")
 @Aspect
+@Slf4j
 public class GlobalOperationAspect {
 
-    private static Logger logger = LoggerFactory.getLogger(GlobalOperationAspect.class);
     private static final String TYPE_STRING = "java.lang.String";
     private static final String TYPE_INTEGER = "java.lang.Integer";
     private static final String TYPE_LONG = "java.lang.Long";
@@ -43,7 +47,7 @@ public class GlobalOperationAspect {
     private UserInfoService userInfoService;
 
     @Resource
-    private AppConfig appConfig;
+    private SenderProperties senderProperties;
 
 
     @Pointcut("@annotation(com.thepan.annotation.GlobalInterceptor)")
@@ -75,42 +79,45 @@ public class GlobalOperationAspect {
                 validateParams(method, arguments);
             }
         } catch (BusinessException e) {
-            logger.error("全局拦截器异常", e);
+            log.error("全局拦截器异常", e);
             throw e;
         } catch (Exception e) {
-            logger.error("全局拦截器异常", e);
+            log.error("全局拦截器异常", e);
             throw new BusinessException(ResponseCodeEnum.CODE_500);
         } catch (Throwable e) {
-            logger.error("全局拦截器异常", e);
+            log.error("全局拦截器异常", e);
             throw new BusinessException(ResponseCodeEnum.CODE_500);
         }
     }
 
 
     //校验登录
-//    private void checkLogin(Boolean checkAdmin) {
-//        HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
-//        HttpSession session = request.getSession();
-//        SessionWebUserDto sessionUser = (SessionWebUserDto) session.getAttribute(Constants.SESSION_KEY);
-//        if (sessionUser == null && appConfig.getDev() != null && appConfig.getDev()) {
-//            List<UserInfo> userInfoList = userInfoService.findListByParam(new UserInfoQuery());
-//            if (!userInfoList.isEmpty()) {
-//                UserInfo userInfo = userInfoList.get(0);
-//                sessionUser = new SessionWebUserDto();
-//                sessionUser.setUserId(userInfo.getUserId());
-//                sessionUser.setNickName(userInfo.getNickName());
-//                sessionUser.setAdmin(true);
-//                session.setAttribute(Constants.SESSION_KEY, sessionUser);
-//            }
-//        }
-//        if (null == sessionUser) {
-//            throw new BusinessException(ResponseCodeEnum.CODE_901);
-//        }
-//
-//        if (checkAdmin && !sessionUser.getAdmin()) {
-//            throw new BusinessException(ResponseCodeEnum.CODE_404);
-//        }
-//    }
+    private void checkLogin(Boolean checkAdmin) {
+        HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
+        HttpSession session = request.getSession();
+        SessionWebUserDto sessionUser = SessionUtil.getUserInfoFromSession(session);
+        if (sessionUser == null) {
+            List<UserInfo> userInfoList = userInfoService.findListByParam(new UserInfoQuery());
+            if (!userInfoList.isEmpty()) {
+                // 默认第一个是管理员
+                UserInfo userInfo = userInfoList.get(0);
+                sessionUser = new SessionWebUserDto();
+                sessionUser.setUserId(userInfo.getUserId());
+                sessionUser.setNickName(userInfo.getNickName());
+                sessionUser.setAdmin(true);
+                session.setAttribute(Constants.SESSION_KEY, sessionUser);
+            }
+        }
+        // 此时sessionUser还是null，那就是美登陆
+        if (null == sessionUser) {
+            throw new BusinessException(ResponseCodeEnum.CODE_901);
+        }
+
+        // 普通用户
+        if (checkAdmin && !sessionUser.getAdmin()) {
+            throw new BusinessException(ResponseCodeEnum.CODE_404);
+        }
+    }
 
 
     private void validateParams(Method m, Object[] arguments) throws BusinessException {
@@ -147,10 +154,10 @@ public class GlobalOperationAspect {
                 checkValue(resultValue, fieldVerifyParam);
             }
         } catch (BusinessException e) {
-            logger.error("校验参数失败", e);
+            log.error("校验参数失败", e);
             throw e;
         } catch (Exception e) {
-            logger.error("校验参数失败", e);
+            log.error("校验参数失败", e);
             throw new BusinessException(ResponseCodeEnum.CODE_600);
         }
     }

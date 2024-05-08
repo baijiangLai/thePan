@@ -1,4 +1,4 @@
-package com.thepan.enums;
+package com.thepan.entity.enums;
 
 
 import org.apache.commons.lang3.ArrayUtils;

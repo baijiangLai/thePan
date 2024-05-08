@@ -1,7 +1,7 @@
 package com.thepan.exception;
 
 
-import com.thepan.enums.ResponseCodeEnum;
+import com.thepan.entity.enums.ResponseCodeEnum;
 
 public class BusinessException extends RuntimeException {
 

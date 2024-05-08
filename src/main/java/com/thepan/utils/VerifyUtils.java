@@ -2,7 +2,7 @@ package com.thepan.utils;
 
 
 
-import com.thepan.enums.VerifyRegexEnum;
+import com.thepan.entity.enums.VerifyRegexEnum;
 
 import java.io.File;
 import java.util.regex.Matcher;
