@@ -6,14 +6,14 @@ import com.thepan.annotation.GlobalInterceptor;
 import com.thepan.annotation.VerifyParam;
 import com.thepan.config.QqProperties;
 import com.thepan.constants.Constants;
-import com.thepan.entity.dto.SessionWebUserDto;
 import com.thepan.entity.dao.UserInfo;
+import com.thepan.entity.dto.SessionWebUserDto;
 import com.thepan.entity.enums.VerifyRegexEnum;
+import com.thepan.entity.vo.response.ResponseVO;
 import com.thepan.exception.BusinessException;
 import com.thepan.service.EmailCodeService;
 import com.thepan.service.UserInfoService;
 import com.thepan.utils.*;
-import com.thepan.entity.vo.ResponseVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -31,7 +31,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-import static com.thepan.utils.ResponseUtils.getSuccessResponseVO;
+import static com.thepan.utils.ResponseUtil.getSuccessResponseVO;
 
 @RestController
 @Slf4j
@@ -99,7 +99,7 @@ public class AccountController {
           return getSuccessResponseVO(new Date());
     } catch (Exception e) {
           e.printStackTrace();
-          return ResponseUtils.getErrorResponseVO(new Date());
+          return getSuccessResponseVO(null);
       }finally {
           session.removeAttribute(Constants.CHECK_CODE_KEY_EMAIL); // 移除旧验证码
       }
