@@ -1,6 +1,9 @@
 package com.thepan.controller;
 
 import com.thepan.annotation.GlobalInterceptor;
+import com.thepan.annotation.VerifyParam;
+import com.thepan.entity.dao.UploadResultDto;
+import com.thepan.entity.dto.SessionWebUserDto;
 import com.thepan.entity.enums.FileCategoryEnums;
 import com.thepan.entity.enums.FileDelFlagEnums;
 import com.thepan.entity.query.FileInfoQuery;
@@ -12,6 +15,7 @@ import com.thepan.utils.ResponseUtil;
 import com.thepan.utils.SessionUtil;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpSession;
@@ -41,5 +45,21 @@ public class FileInfoController {
         PaginationResultVO result = fileInfoService.findListByPage(query);
 
         return ResponseUtil.getSuccessResponseVO(ResponseUtil.convert2PaginationVO(result, FileInfoVO.class));
+    }
+
+    @RequestMapping("/uploadFile")
+    @GlobalInterceptor
+    public ResponseVO uploadFile(HttpSession session,
+                                 String fileId,
+                                 MultipartFile file,
+                                 @VerifyParam(required = true) String fileName,
+                                 @VerifyParam(required = true) String filePid,
+                                 @VerifyParam(required = true) String fileMd5,
+                                 @VerifyParam(required = true) Integer chunkIndex,
+                                 @VerifyParam(required = true) Integer chunks) {
+
+        SessionWebUserDto webUserDto = SessionUtil.getUserInfoFromSession(session);
+        UploadResultDto resultDto = fileInfoService.uploadFile(webUserDto, fileId, file, fileName, filePid, fileMd5, chunkIndex, chunks);
+        return ResponseUtil.getSuccessResponseVO(resultDto);
     }
 }

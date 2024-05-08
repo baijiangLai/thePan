@@ -48,7 +48,7 @@ public class StringTools {
 
 
     public static String escapeTitle(String content) {
-        if (isEmpty(content)) {
+        if (StrUtil.isEmpty(content)) {
             return content;
         }
         content = content.replace("<", "&lt;");
@@ -57,7 +57,7 @@ public class StringTools {
 
 
     public static String escapeHtml(String content) {
-        if (isEmpty(content)) {
+        if (StrUtil.isEmpty(content)) {
             return content;
         }
         content = content.replace("<", "&lt;");
@@ -67,7 +67,7 @@ public class StringTools {
     }
 
     public static boolean pathIsOk(String path) {
-        if (StringTools.isEmpty(path)) {
+        if (StrUtil.isEmpty(path)) {
             return true;
         }
         if (path.contains("../") || path.contains("..\\")) {
