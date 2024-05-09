@@ -14,4 +14,8 @@ public interface FileShareMapper {
     Integer selectCount(@Param("fileShareQuery") FileShareQuery fileShareQuery);
 
     List<FileShare> selectList(@Param("fileShareQuery") FileShareQuery fileShareQuery);
+
+    Integer insert(@Param("fileShare") FileShare share);
+
+    Integer deleteFileShareBatch(@Param("shareIdArray") String[] shareIdArray, @Param("userId") String userId);
 }

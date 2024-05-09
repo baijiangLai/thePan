@@ -2,6 +2,7 @@ package com.thepan.controller;
 
 import com.thepan.annotation.GlobalInterceptor;
 import com.thepan.annotation.VerifyParam;
+import com.thepan.entity.dao.FileShare;
 import com.thepan.entity.query.FileShareQuery;
 import com.thepan.entity.vo.file.PaginationResultVO;
 import com.thepan.entity.vo.response.ResponseVO;
@@ -34,22 +35,15 @@ public class ShareController {
                                 @VerifyParam(required = true) String fileId,
                                 @VerifyParam(required = true) Integer validType,
                                 String code) {
-
-        SessionWebUserDto userDto = getUserInfoFromSession(session);
-        FileShare share = new FileShare();
-        share.setFileId(fileId);
-        share.setValidType(validType);
-        share.setCode(code);
-        share.setUserId(userDto.getUserId());
-        fileShareService.saveShare(share);
-        return getSuccessResponseVO(share);
+        FileShare shareFile = fileShareService.shareFile(session, fileId, validType, code);
+        return ResponseUtil.getSuccessResponseVO(shareFile);
     }
 
     @RequestMapping("/cancelShare")
     @GlobalInterceptor(checkParams = true)
     public ResponseVO cancelShare(HttpSession session, @VerifyParam(required = true) String shareIds) {
-        SessionWebUserDto userDto = getUserInfoFromSession(session);
-        fileShareService.deleteFileShareBatch(shareIds.split(","), userDto.getUserId());
-        return getSuccessResponseVO(null);
+        String userId = SessionUtil.getUserInfoFromSession(session).getUserId();
+        fileShareService.deleteFileShareBatch(shareIds, userId);
+        return ResponseUtil.getSuccessResponseVO(null);
     }
 }

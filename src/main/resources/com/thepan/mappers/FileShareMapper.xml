@@ -42,7 +42,7 @@
     </sql>
 
     <sql id="base_condition_filed">
-        <if test="query.shareId != null and fileShareQuery.shareId!=''">
+        <if test="fileShareQuery..shareId != null and fileShareQuery.shareId!=''">
             and share_id = #{fileShareQuery.shareId}
         </if>
         <if test="fileShareQuery.fileId != null and fileShareQuery.fileId!=''">
@@ -109,6 +109,90 @@
         SELECT count(1) FROM file_share s
         <include refid="query_condition"/>
     </select>
+
+    <!-- 插入 （匹配有值的字段）-->
+    <insert id="insert" parameterType="com.thepan.entity.dao.FileShare">
+        INSERT INTO file_share
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="fileShare.shareId != null">
+                share_id,
+            </if>
+            <if test="fileShare.fileId != null">
+                file_id,
+            </if>
+            <if test="fileShare.userId != null">
+                user_id,
+            </if>
+            <if test="fileShare.validType != null">
+                valid_type,
+            </if>
+            <if test="fileShare.expireTime != null">
+                expire_time,
+            </if>
+            <if test="fileShare.shareTime != null">
+                share_time,
+            </if>
+            <if test="fileShare.code != null">
+                code,
+            </if>
+            <if test="fileShare.showCount != null">
+                show_count,
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="fileShare.shareId!=null">
+                #{fileShare.shareId},
+            </if>
+            <if test="fileShare.fileId!=null">
+                #{fileShare.fileId},
+            </if>
+            <if test="fileShare.userId!=null">
+                #{fileShare.userId},
+            </if>
+            <if test="fileShare.validType!=null">
+                #{fileShare.validType},
+            </if>
+            <if test="fileShare.expireTime!=null">
+                #{fileShare.expireTime},
+            </if>
+            <if test="fileShare.shareTime!=null">
+                #{fileShare.shareTime},
+            </if>
+            <if test="fileShare.code!=null">
+                #{fileShare.code},
+            </if>
+            <if test="fileShare.showCount!=null">
+                #{fileShare.showCount},
+            </if>
+        </trim>
+    </insert>
+
+
+    <!-- 查询集合-->
+    <select id="selectList" resultMap="base_result_map">
+        SELECT
+        <include refid="base_column_list"/>
+        <if test="fileShareQuery.queryFileName!=null and fileShareQuery.queryFileName">
+            ,f.file_name,f.folder_type,f.file_category,f.file_type,f.file_cover
+        </if>
+        FROM file_share s
+        <if test="fileShareQuery.queryFileName!=null and fileShareQuery.queryFileName">
+            left join file_info f on s.file_id = f.file_id and f.user_id = #{fileShareQuery.userId}
+        </if>
+        <include refid="query_condition"/>
+        <if test="fileShareQuery.orderBy!=null">
+            order by ${fileShareQuery.orderBy}
+        </if>
+        <if test="fileShareQuery.simplePage!=null">
+            limit #{fileShareQuery.simplePage.start},#{fileShareQuery.simplePage.end}
+        </if>
+    </select>
+
+
+    <delete id="deleteFileShareBatch">
+        delete from file_share where user_id = #{userId}
+        and share_id in(<foreach collection="shareIdArray" separator="," item="item">#{item}</foreach>)
+    </delete>
 
 
 </mapper>
