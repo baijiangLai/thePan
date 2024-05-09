@@ -460,4 +460,18 @@
             and del_flag = #{oldDelFlag}
         </if>
     </update>
+
+
+    <delete id="delFileBatch">
+        delete from file_info where user_id = #{userId}
+        <if test="filePidList!=null">
+            and file_pid in(<foreach collection="filePidList" separator="," item="item">#{item}</foreach>)
+        </if>
+        <if test="fileIdList!=null">
+            and file_id in(<foreach collection="fileIdList" separator="," item="item">#{item}</foreach>)
+        </if>
+        <if test="oldDelFlag!=null">
+            and del_flag = #{oldDelFlag}
+        </if>
+    </delete>
 </mapper>

@@ -33,4 +33,10 @@ public interface FileInfoMapper {
                                 @Param("filePidList") List<String> filePidList,
                                 @Param("fileIdList") List<String> fileIdList,
                                 @Param("oldDelFlag") Integer oldDelFlag);
+
+    Integer delFileBatch(@Param("userId") String userId,
+                      @Param("filePidList") List<String> filePidList,
+                      @Param("fileIdList") List<String> fileIdList,
+                      @Param("oldDelFlag") Integer oldDelFlag);
+
 }

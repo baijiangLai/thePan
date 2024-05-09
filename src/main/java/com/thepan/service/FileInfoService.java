@@ -46,4 +46,12 @@ public interface FileInfoService {
     void download(HttpServletRequest request, HttpServletResponse response, String code);
 
     void removeFile2RecycleBatch(String userId, String fileIds);
+
+    PaginationResultVO loadRecycleList(HttpSession session, Integer pageNo, Integer pageSize);
+
+    void recoverFileBatch(String userId, String fileIds);
+    void recoverFile(HttpSession session, String fileIds);
+
+    void delFileBatch(String userId, String fileIds, Boolean adminOp);
+    void delFile(HttpSession session, String fileIds);
 }
