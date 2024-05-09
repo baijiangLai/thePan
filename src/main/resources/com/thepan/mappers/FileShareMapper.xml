@@ -3,4 +3,112 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.thepan.mappers.FileShareMapper">
 
+    <!--实体映射-->
+    <resultMap id="base_result_map" type="com.thepan.entity.dao.FileShare">
+        <!--分享ID-->
+        <result column="share_id" property="shareId"/>
+        <!--文件ID-->
+        <result column="file_id" property="fileId"/>
+        <!--用户ID-->
+        <result column="user_id" property="userId"/>
+        <!--有效期类型 0:1天 1:7天 2:30天 3:永久有效-->
+        <result column="valid_type" property="validType"/>
+        <!--失效时间-->
+        <result column="expire_time" property="expireTime"/>
+        <!--分享时间-->
+        <result column="share_time" property="shareTime"/>
+        <!--提取码-->
+        <result column="code" property="code"/>
+        <!--浏览次数-->
+        <result column="show_count" property="showCount"/>
+        <!--文件名称-->
+        <result column="file_name" property="fileName"/>
+        <!--封面-->
+        <result column="file_cover" property="fileCover"/>
+        <!--0:文件 1:目录-->
+        <result column="folder_type" property="folderType"/>
+        <!--1:视频 2:音频  3:图片 4:文档 5:其他-->
+        <result column="file_category" property="fileCategory"/>
+        <!-- 1:视频 2:音频  3:图片 4:pdf 5:doc 6:excel 7:txt 8:code 9:zip 10:其他-->
+        <result column="file_type" property="fileType"/>
+    </resultMap>
+
+
+    <!-- 通用查询结果列-->
+    <sql id="base_column_list">
+        share_id
+        ,s.file_id,s.user_id,valid_type,expire_time,
+		 share_time,code,show_count
+    </sql>
+
+    <sql id="base_condition_filed">
+        <if test="query.shareId != null and fileShareQuery.shareId!=''">
+            and share_id = #{fileShareQuery.shareId}
+        </if>
+        <if test="fileShareQuery.fileId != null and fileShareQuery.fileId!=''">
+            and s.file_id = #{fileShareQuery.fileId}
+        </if>
+        <if test="fileShareQuery.userId != null and fileShareQuery.userId!=''">
+            and s.user_id = #{fileShareQuery.userId}
+        </if>
+        <if test="fileShareQuery.validType != null">
+            and valid_type = #{fileShareQuery.validType}
+        </if>
+        <if test="fileShareQuery.expireTime != null and fileShareQuery.expireTime!=''">
+            <![CDATA[ and  expire_time=str_to_date(#{fileShareQuery.expireTime}, '%Y-%m-%d') ]]>
+        </if>
+        <if test="fileShareQuery.shareTime != null and fileShareQuery.shareTime!=''">
+            <![CDATA[ and  share_time=str_to_date(#{fileShareQuery.shareTime}, '%Y-%m-%d') ]]>
+        </if>
+        <if test="fileShareQuery.code != null and fileShareQuery.code!=''">
+            and code = #{fileShareQuery.code}
+        </if>
+        <if test="fileShareQuery.showCount != null">
+            and show_count = #{fileShareQuery.showCount}
+        </if>
+    </sql>
+    <!-- 通用条件列-->
+    <sql id="base_condition">
+        <where>
+            <include refid="base_condition_filed"/>
+        </where>
+    </sql>
+
+    <!-- 通用查询条件列-->
+    <sql id="query_condition">
+        <where>
+            <include refid="base_condition_filed"/>
+            <if test="fileShareQuery.shareIdFuzzy!= null  and fileShareQuery.shareIdFuzzy!=''">
+                and share_id like concat('%', #{fileShareQuery.shareIdFuzzy}, '%')
+            </if>
+            <if test="fileShareQuery.fileIdFuzzy!= null  and fileShareQuery.fileIdFuzzy!=''">
+                and s.file_id like concat('%', #{fileShareQuery.fileIdFuzzy}, '%')
+            </if>
+            <if test="fileShareQuery.userIdFuzzy!= null  and fileShareQuery.userIdFuzzy!=''">
+                and s.user_id like concat('%', #{fileShareQuery.userIdFuzzy}, '%')
+            </if>
+            <if test="fileShareQuery.expireTimeStart!= null and fileShareQuery.expireTimeStart!=''">
+                <![CDATA[ and  expire_time>=str_to_date(#{fileShareQuery.expireTimeStart}, '%Y-%m-%d') ]]>
+            </if>
+            <if test="fileShareQuery.expireTimeEnd!= null and fileShareQuery.expireTimeEnd!=''">
+                <![CDATA[ and  expire_time< date_sub(str_to_date(#{fileShareQuery.expireTimeEnd},'%Y-%m-%d'),interval -1 day) ]]>
+            </if>
+            <if test="fileShareQuery.shareTimeStart!= null and fileShareQuery.shareTimeStart!=''">
+                <![CDATA[ and  share_time>=str_to_date(#{fileShareQuery.shareTimeStart}, '%Y-%m-%d') ]]>
+            </if>
+            <if test="fileShareQuery.shareTimeEnd!= null and fileShareQuery.shareTimeEnd!=''">
+                <![CDATA[ and  share_time< date_sub(str_to_date(#{fileShareQuery.shareTimeEnd},'%Y-%m-%d'),interval -1 day) ]]>
+            </if>
+            <if test="fileShareQuery.codeFuzzy!= null  and fileShareQuery.codeFuzzy!=''">
+                and code like concat('%', #{fileShareQuery.codeFuzzy}, '%')
+            </if>
+        </where>
+    </sql>
+
+    <select id="selectCount" resultType="java.lang.Integer">
+        SELECT count(1) FROM file_share s
+        <include refid="query_condition"/>
+    </select>
+
+
 </mapper>
