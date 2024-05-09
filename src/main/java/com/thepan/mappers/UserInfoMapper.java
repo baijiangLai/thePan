@@ -39,4 +39,8 @@ public interface UserInfoMapper {
     List<UserInfo> selectList(@Param("userInfoQuery")UserInfoQuery userInfoQuery);
 
     Integer updateUserSpace(@Param("userId") String userId, @Param("useSpace") Long useSpace, @Param("totalSpace") Long totalSpace);
+
+    Integer selectCount(@Param("userInfoQuery") UserInfoQuery userInfoQuery);
+
+    UserInfo selectByUserId(@Param("userId") String userId);
 }

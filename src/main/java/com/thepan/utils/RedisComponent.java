@@ -1,10 +1,12 @@
 package com.thepan.utils;
 
 import com.thepan.constants.Constants;
+import com.thepan.entity.dao.UserInfo;
 import com.thepan.entity.dto.SysSettingsDto;
 import com.thepan.entity.dto.UserSpaceDto;
 import com.thepan.entity.vo.file.DownloadFileDto;
 import com.thepan.mappers.FileInfoMapper;
+import com.thepan.mappers.UserInfoMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -21,6 +23,9 @@ public class RedisComponent {
 
     @Resource
     private FileInfoMapper fileInfoMapper;
+
+    @Resource
+    private UserInfoMapper userInfoMapper;
 
     /**
      *  从redis数据库中提取提取系统设置sysSettingsDto，没有的情况直接初始化后存放于redis中
@@ -87,5 +92,20 @@ public class RedisComponent {
 
     public DownloadFileDto getDownloadCode(String code) {
         return (DownloadFileDto) redisUtil.get(Constants.REDIS_KEY_DOWNLOAD + code);
+    }
+
+    public void saveSysSettingsDto(SysSettingsDto sysSettingsDto) {
+        redisUtil.set(Constants.REDIS_KEY_SYS_SETTING, sysSettingsDto);
+    }
+
+    public UserSpaceDto resetUserSpaceUse(String userId) {
+        UserSpaceDto spaceDto = new UserSpaceDto();
+        Long useSpace = fileInfoMapper.selectUseSpace(userId);
+        spaceDto.setUseSpace(useSpace);
+
+        UserInfo userInfo = userInfoMapper.selectByUserId(userId);
+        spaceDto.setTotalSpace(userInfo.getTotalSpace());
+        redisUtil.set(Constants.REDIS_KEY_USER_SPACE_USE + userId, spaceDto, 1, TimeUnit.DAYS);
+        return spaceDto;
     }
 }

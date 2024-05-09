@@ -6,18 +6,23 @@ import cn.hutool.json.JSONUtil;
 import com.thepan.config.AdminProperties;
 import com.thepan.config.QqProperties;
 import com.thepan.constants.Constants;
+import com.thepan.entity.dao.UserInfo;
 import com.thepan.entity.dto.QQInfoDto;
 import com.thepan.entity.dto.SessionWebUserDto;
-import com.thepan.entity.dao.UserInfo;
 import com.thepan.entity.dto.UserSpaceDto;
+import com.thepan.entity.enums.PageSize;
 import com.thepan.entity.enums.UserStatusEnum;
+import com.thepan.entity.query.SimplePage;
 import com.thepan.entity.query.UserInfoQuery;
+import com.thepan.entity.vo.file.PaginationResultVO;
 import com.thepan.exception.BusinessException;
 import com.thepan.mappers.UserInfoMapper;
 import com.thepan.service.EmailCodeService;
 import com.thepan.service.FileInfoService;
 import com.thepan.service.UserInfoService;
-import com.thepan.utils.*;
+import com.thepan.utils.OKHttpUtils;
+import com.thepan.utils.RedisComponent;
+import com.thepan.utils.StringTools;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -279,5 +284,41 @@ public class UserInfoServiceImpl implements UserInfoService {
     @Override
     public List<UserInfo> findListByParam(UserInfoQuery userInfoQuery) {
         return userInfoMapper.selectList(userInfoQuery);
+    }
+
+    @Override
+    public PaginationResultVO<UserInfo> findListByPage(UserInfoQuery param) {
+        int count = findCountByParam(param);
+        int pageSize = param.getPageSize() == null ? PageSize.SIZE15.getSize() : param.getPageSize();
+
+        SimplePage page = new SimplePage(param.getPageNo(), count, pageSize);
+        param.setSimplePage(page);
+        List<UserInfo> list = findListByParam(param);
+        PaginationResultVO<UserInfo> result = new PaginationResultVO(count, page.getPageSize(), page.getPageNo(), page.getPageTotal(), list);
+        return result;
+    }
+
+    private Integer findCountByParam(UserInfoQuery param) {
+        return userInfoMapper.selectCount(param);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updateUserStatus(String userId, Integer status) {
+        UserInfo userInfo = new UserInfo();
+        userInfo.setStatus(status);
+        if (UserStatusEnum.DISABLE.getStatus().equals(status)) {
+            userInfo.setUseSpace(0L);
+            fileInfoService.deleteFileByUserId(userId);
+        }
+        userInfoMapper.updateByUserId(userInfo, userId);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void changeUserSpace(String userId, Integer changeSpace) {
+        Long space = changeSpace * Constants.MB;
+        userInfoMapper.updateUserSpace(userId, null, space);
+        redisComponent.resetUserSpaceUse(userId);
     }
 }

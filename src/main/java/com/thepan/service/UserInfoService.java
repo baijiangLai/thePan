@@ -1,9 +1,10 @@
 package com.thepan.service;
 
 
-import com.thepan.entity.dto.SessionWebUserDto;
 import com.thepan.entity.dao.UserInfo;
+import com.thepan.entity.dto.SessionWebUserDto;
 import com.thepan.entity.query.UserInfoQuery;
+import com.thepan.entity.vo.file.PaginationResultVO;
 
 import java.util.List;
 
@@ -23,4 +24,10 @@ public interface UserInfoService {
     SessionWebUserDto qqLogin(String code);
 
     List<UserInfo> findListByParam(UserInfoQuery userInfoQuery);
+
+    PaginationResultVO<UserInfo> findListByPage(UserInfoQuery param);
+
+    void updateUserStatus(String userId, Integer status);
+
+    void changeUserSpace(String userId, Integer changeSpace);
 }

@@ -28,7 +28,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
@@ -40,8 +39,6 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.net.URLEncoder;
 import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
  * 文件信息 业务接口实现
@@ -80,11 +77,13 @@ public class FileInfoServiceImpl implements FileInfoService {
         return result;
     }
 
-    private List<FileInfo> findListByParam(FileInfoQuery fileInfoQuery) {
+    @Override
+    public List<FileInfo> findListByParam(FileInfoQuery fileInfoQuery) {
         return fileInfoMapper.selectList(fileInfoQuery);
     }
 
-    private int findCountByParam(FileInfoQuery fileInfoQuery) {
+    @Override
+    public Integer findCountByParam(FileInfoQuery fileInfoQuery) {
         return fileInfoMapper.selectCount(fileInfoQuery);
     }
 
@@ -226,63 +225,6 @@ public class FileInfoServiceImpl implements FileInfoService {
                     log.error("删除临时目录失败");
                 }
             }
-        }
-    }
-
-    @Override
-    public void getfile(HttpServletResponse response, HttpSession session, String fileId) {
-        SessionWebUserDto webUserDto = SessionUtil.getUserInfoFromSession(session);
-        String userId = webUserDto.getUserId();
-        String filePath;
-
-        if (fileId.endsWith(".ts")) {
-            String[] tsAarray = fileId.split("_");
-            String realFileId = tsAarray[0];
-            //根据原文件的id查询出一个文件集合
-            FileInfo fileInfo = getFileInfoByFileIdAndUserId(realFileId, userId);
-            if (fileInfo == null) {
-                //分享的视频，ts路径记录的是原视频的id,这里通过id直接取出原视频
-                FileInfoQuery fileInfoQuery = new FileInfoQuery();
-                fileInfoQuery.setFileId(realFileId);
-                List<FileInfo> fileInfoList = fileInfoService.findListByParam(fileInfoQuery);
-                fileInfo = fileInfoList.get(0);
-                if (fileInfo == null) {
-                    return;
-                }
-
-                //更具当前用户id和路径去查询当前用户是否有该文件，如果没有直接返回
-                fileInfoQuery = new FileInfoQuery();
-                fileInfoQuery.setFilePath(fileInfo.getFilePath());
-                fileInfoQuery.setUserId(userId);
-                Integer count = fileInfoService.findCountByParam(fileInfoQuery);
-                if (count == 0) {
-                    return;
-                }
-            }
-            String fileName = fileInfo.getFilePath();
-            fileName = StringTools.getFileNameNoSuffix(fileName) + "/" + fileId;
-            filePath = FolderUtil.getProjectFolder() + Constants.FILE_FOLDER_FILE + fileName;
-        } else {
-            FileInfo fileInfo = getFileInfoByFileIdAndUserId(fileId, userId);
-            if (fileInfo == null) {
-                return;
-            }
-
-            //视频文件读取.m3u8文件
-            if (FileCategoryEnums.VIDEO.getCategory().equals(fileInfo.getFileCategory())) {
-                //重新设置文件路径
-                String fileNameNoSuffix = StringTools.getFileNameNoSuffix(fileInfo.getFilePath());
-                filePath = FolderUtil.getProjectFolder() + Constants.FILE_FOLDER_FILE + fileNameNoSuffix + "/" + Constants.M3U8_NAME;
-            } else {
-                filePath = FolderUtil.getProjectFolder() + Constants.FILE_FOLDER_FILE + fileInfo.getFilePath();
-            }
-        }
-
-        try {
-            File file = FileUtil.file(filePath);
-            FileUtil.writeToStream(file, response.getOutputStream());
-        } catch (IOException e) {
-            log.error("读取文件异常", e);
         }
     }
 
@@ -823,6 +765,11 @@ public class FileInfoServiceImpl implements FileInfoService {
         for (FileInfo fileInfo : fileInfoList) {
             findAllSubFolderFileIdList(fileIdList, userId, fileInfo.getFileId(), delFlag);
         }
+    }
+
+    @Override
+    public void deleteFileByUserId(String userId) {
+        fileInfoMapper.deleteFileByUserId(userId);
     }
 
 }

@@ -474,4 +474,10 @@
             and del_flag = #{oldDelFlag}
         </if>
     </delete>
+
+    <delete id="deleteFileByUserId">
+        delete
+        from file_info
+        where user_id = #{userId}
+    </delete>
 </mapper>

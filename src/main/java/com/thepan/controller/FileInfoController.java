@@ -1,10 +1,8 @@
 package com.thepan.controller;
 
 import cn.hutool.core.bean.BeanUtil;
-import cn.hutool.core.io.FileUtil;
 import com.thepan.annotation.GlobalInterceptor;
 import com.thepan.annotation.VerifyParam;
-import com.thepan.constants.Constants;
 import com.thepan.entity.dao.FileInfo;
 import com.thepan.entity.dao.UploadResultDto;
 import com.thepan.entity.dto.SessionWebUserDto;
@@ -16,9 +14,11 @@ import com.thepan.entity.vo.file.FolderVO;
 import com.thepan.entity.vo.file.PaginationResultVO;
 import com.thepan.entity.vo.response.ResponseVO;
 import com.thepan.service.FileInfoService;
-import com.thepan.utils.*;
+import com.thepan.utils.CopyTools;
+import com.thepan.utils.FileGetUtil;
+import com.thepan.utils.ResponseUtil;
+import com.thepan.utils.SessionUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -28,10 +28,6 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.OutputStream;
 import java.util.List;
 
 /**
@@ -97,7 +93,9 @@ public class FileInfoController {
 
     @RequestMapping("/getFile/{fileId}")
     public void getFile(HttpServletResponse response, HttpSession session, @PathVariable("fileId") @VerifyParam(required = true) String fileId) {
-        fileInfoService.getfile(response, session, fileId);
+        FileGetUtil fileGetUtil = new FileGetUtil(fileInfoService);
+        String userId = SessionUtil.getUserInfoFromSession(session).getUserId();
+        fileGetUtil.getFile(response, fileId, userId);
     }
 
     @RequestMapping("/newFoloder")

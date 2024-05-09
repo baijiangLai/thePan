@@ -25,7 +25,6 @@ public interface FileInfoService {
 
     UploadResultDto uploadFile(SessionWebUserDto webUserDto, String fileId, MultipartFile file, String fileName, String filePid, String fileMd5, Integer chunkIndex, Integer chunks);
 
-    void getfile(HttpServletResponse response, HttpSession session, String fileId);
 
     FileInfo getFileInfoByFileIdAndUserId(String realFileId, String userId);
 
@@ -54,4 +53,10 @@ public interface FileInfoService {
 
     void delFileBatch(String userId, String fileIds, Boolean adminOp);
     void delFile(HttpSession session, String fileIds);
+
+    void deleteFileByUserId(String userId);
+
+    List<FileInfo> findListByParam(FileInfoQuery fileInfoQuery);
+
+    Integer findCountByParam(FileInfoQuery fileInfoQuery);
 }
