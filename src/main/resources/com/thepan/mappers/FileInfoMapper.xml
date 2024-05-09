@@ -353,4 +353,111 @@
         and status = #{oldStatus}
     </update>
 
+    <!-- 根据FileIdAndUserId修改-->
+    <update id="updateByFileIdAndUserId" parameterType="com.thepan.entity.dao.FileInfo">
+        UPDATE file_info
+        <set>
+            <if test="dbInfo.fileMd5 != null">
+                file_md5 = #{dbInfo.fileMd5},
+            </if>
+            <if test="dbInfo.filePid != null">
+                file_pid = #{dbInfo.filePid},
+            </if>
+            <if test="dbInfo.fileSize != null">
+                file_size = #{dbInfo.fileSize},
+            </if>
+            <if test="dbInfo.fileName != null">
+                file_name = #{dbInfo.fileName},
+            </if>
+            <if test="dbInfo.fileCover != null">
+                file_cover = #{dbInfo.fileCover},
+            </if>
+            <if test="dbInfo.filePath != null">
+                file_path = #{dbInfo.filePath},
+            </if>
+            <if test="dbInfo.createTime != null">
+                create_time = #{dbInfo.createTime},
+            </if>
+            <if test="dbInfo.lastUpdateTime != null">
+                last_update_time = #{dbInfo.lastUpdateTime},
+            </if>
+            <if test="dbInfo.folderType != null">
+                folder_type = #{dbInfo.folderType},
+            </if>
+            <if test="dbInfo.fileCategory != null">
+                file_category = #{dbInfo.fileCategory},
+            </if>
+            <if test="dbInfo.fileType != null">
+                file_type = #{dbInfo.fileType},
+            </if>
+            <if test="dbInfo.status != null">
+                status = #{dbInfo.status},
+            </if>
+            <if test="dbInfo.recoveryTime != null">
+                recovery_time = #{dbInfo.recoveryTime},
+            </if>
+            <if test="dbInfo.delFlag != null">
+                del_flag = #{dbInfo.delFlag},
+            </if>
+        </set>
+        where file_id=#{fileId} and user_id=#{userId}
+    </update>
+
+    <update id="updateFileDelFlagBatch">
+        update file_info
+        <set>
+            <if test="fileInfo.fileMd5 != null">
+                file_md5 = #{fileInfo.fileMd5},
+            </if>
+            <if test="fileInfo.filePid != null">
+                file_pid = #{fileInfo.filePid},
+            </if>
+            <if test="fileInfo.fileSize != null">
+                file_size = #{fileInfo.fileSize},
+            </if>
+            <if test="fileInfo.fileName != null">
+                file_name = #{fileInfo.fileName},
+            </if>
+            <if test="fileInfo.fileCover != null">
+                file_cover = #{fileInfo.fileCover},
+            </if>
+            <if test="fileInfo.filePath != null">
+                file_path = #{fileInfo.filePath},
+            </if>
+            <if test="fileInfo.createTime != null">
+                create_time = #{fileInfo.createTime},
+            </if>
+            <if test="fileInfo.lastUpdateTime != null">
+                last_update_time = #{fileInfo.lastUpdateTime},
+            </if>
+            <if test="fileInfo.folderType != null">
+                folder_type = #{fileInfo.folderType},
+            </if>
+            <if test="fileInfo.fileCategory != null">
+                file_category = #{fileInfo.fileCategory},
+            </if>
+            <if test="fileInfo.fileType != null">
+                file_type = #{fileInfo.fileType},
+            </if>
+            <if test="fileInfo.status != null">
+                status = #{fileInfo.status},
+            </if>
+            <if test="fileInfo.recoveryTime != null">
+                recovery_time = #{fileInfo.recoveryTime},
+            </if>
+            <if test="fileInfo.delFlag != null">
+                del_flag = #{fileInfo.delFlag},
+            </if>
+        </set>
+        where user_id = #{userId}
+        <if test="filePidList!=null">
+            and file_pid in(<foreach collection="filePidList" separator="," item="item">#{item}</foreach>)
+        </if>
+        <if test="fileIdList!=null">
+            and file_id in(<foreach collection="fileIdList" separator="," item="item">#{item}</foreach>)
+        </if>
+        <if test="oldDelFlag!=null">
+            and del_flag = #{oldDelFlag}
+        </if>
+    </update>
 </mapper>

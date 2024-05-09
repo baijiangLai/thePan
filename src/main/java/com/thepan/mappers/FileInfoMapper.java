@@ -25,4 +25,12 @@ public interface FileInfoMapper {
     FileInfo selectByFileIdAndUserId(@Param("fileId") String fileId, @Param("userId") String userId);
 
     Integer updateFileStatusWithOldStatus(@Param("fileId") String fileId, @Param("userId") String userId, @Param("fileInfo") FileInfo fileInfo, @Param("status") Integer status);
+
+    Integer updateByFileIdAndUserId(@Param("dbInfo") FileInfo dbInfo, @Param("fileId") String fileId, @Param("userId") String userId);
+
+    Integer updateFileDelFlagBatch(@Param("fileInfo") FileInfo fileInfo,
+                                @Param("userId") String userId,
+                                @Param("filePidList") List<String> filePidList,
+                                @Param("fileIdList") List<String> fileIdList,
+                                @Param("oldDelFlag") Integer oldDelFlag);
 }

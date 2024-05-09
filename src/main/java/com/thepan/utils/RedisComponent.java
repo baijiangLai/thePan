@@ -3,6 +3,7 @@ package com.thepan.utils;
 import com.thepan.constants.Constants;
 import com.thepan.entity.dto.SysSettingsDto;
 import com.thepan.entity.dto.UserSpaceDto;
+import com.thepan.entity.vo.file.DownloadFileDto;
 import com.thepan.mappers.FileInfoMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -78,5 +79,13 @@ public class RedisComponent {
     public void saveFileTempSize(String userId, String fileId, Long fileSize) {
         Long currentSize = getFileTempSize(userId, fileId);
         redisUtil.set(Constants.REDIS_KEY_USER_FILE_TEMP_SIZE + userId + fileId, currentSize + fileSize, 1, TimeUnit.HOURS);
+    }
+
+    public void saveDownloadCode(String code, DownloadFileDto downloadFileDto) {
+        redisUtil.set(Constants.REDIS_KEY_DOWNLOAD + code, downloadFileDto, 1, TimeUnit.HOURS);
+    }
+
+    public DownloadFileDto getDownloadCode(String code) {
+        return (DownloadFileDto) redisUtil.get(Constants.REDIS_KEY_DOWNLOAD + code);
     }
 }

@@ -11,31 +11,36 @@ import com.thepan.entity.dto.UserSpaceDto;
 import com.thepan.entity.enums.*;
 import com.thepan.entity.query.FileInfoQuery;
 import com.thepan.entity.query.SimplePage;
+import com.thepan.entity.vo.file.DownloadFileDto;
 import com.thepan.entity.vo.file.PaginationResultVO;
 import com.thepan.exception.BusinessException;
 import com.thepan.mappers.FileInfoMapper;
 import com.thepan.mappers.UserInfoMapper;
 import com.thepan.service.FileInfoService;
-import com.thepan.utils.DateUtil;
-import com.thepan.utils.FolderUtil;
-import com.thepan.utils.RedisComponent;
-import com.thepan.utils.StringTools;
+import com.thepan.utils.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.util.Date;
-import java.util.List;
+import java.net.URLEncoder;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * 文件信息 业务接口实现
@@ -223,12 +228,145 @@ public class FileInfoServiceImpl implements FileInfoService {
         }
     }
 
+    @Override
+    public void getfile(HttpServletResponse response, HttpSession session, String fileId) {
+        SessionWebUserDto webUserDto = SessionUtil.getUserInfoFromSession(session);
+        String userId = webUserDto.getUserId();
+        String filePath;
+
+        if (fileId.endsWith(".ts")) {
+            String[] tsAarray = fileId.split("_");
+            String realFileId = tsAarray[0];
+            //根据原文件的id查询出一个文件集合
+            FileInfo fileInfo = getFileInfoByFileIdAndUserId(realFileId, userId);
+            if (fileInfo == null) {
+                //分享的视频，ts路径记录的是原视频的id,这里通过id直接取出原视频
+                FileInfoQuery fileInfoQuery = new FileInfoQuery();
+                fileInfoQuery.setFileId(realFileId);
+                List<FileInfo> fileInfoList = fileInfoService.findListByParam(fileInfoQuery);
+                fileInfo = fileInfoList.get(0);
+                if (fileInfo == null) {
+                    return;
+                }
+
+                //更具当前用户id和路径去查询当前用户是否有该文件，如果没有直接返回
+                fileInfoQuery = new FileInfoQuery();
+                fileInfoQuery.setFilePath(fileInfo.getFilePath());
+                fileInfoQuery.setUserId(userId);
+                Integer count = fileInfoService.findCountByParam(fileInfoQuery);
+                if (count == 0) {
+                    return;
+                }
+            }
+            String fileName = fileInfo.getFilePath();
+            fileName = StringTools.getFileNameNoSuffix(fileName) + "/" + fileId;
+            filePath = FolderUtil.getProjectFolder() + Constants.FILE_FOLDER_FILE + fileName;
+        } else {
+            FileInfo fileInfo = getFileInfoByFileIdAndUserId(fileId, userId);
+            if (fileInfo == null) {
+                return;
+            }
+
+            //视频文件读取.m3u8文件
+            if (FileCategoryEnums.VIDEO.getCategory().equals(fileInfo.getFileCategory())) {
+                //重新设置文件路径
+                String fileNameNoSuffix = StringTools.getFileNameNoSuffix(fileInfo.getFilePath());
+                filePath = FolderUtil.getProjectFolder() + Constants.FILE_FOLDER_FILE + fileNameNoSuffix + "/" + Constants.M3U8_NAME;
+            } else {
+                filePath = FolderUtil.getProjectFolder() + Constants.FILE_FOLDER_FILE + fileInfo.getFilePath();
+            }
+        }
+
+        try {
+            File file = FileUtil.file(filePath);
+            FileUtil.writeToStream(file, response.getOutputStream());
+        } catch (IOException e) {
+            log.error("读取文件异常", e);
+        }
+    }
+
+    @Override
+    public FileInfo getFileInfoByFileIdAndUserId(String fileId, String userId) {
+        return fileInfoMapper.selectByFileIdAndUserId(fileId, userId);
+    }
+
+    @Override
+    public void getImage(HttpServletResponse response, String imageFolder, String imageName) {
+        if (StringTools.isEmpty(imageFolder) || StringUtils.isBlank(imageName)) {
+            return;
+        }
+
+        String imageSuffix = StringTools.getFileSuffix(imageName);
+        String filePath = FolderUtil.getProjectFolder() + Constants.FILE_FOLDER_FILE + imageFolder + "/" + imageName;
+        imageSuffix = imageSuffix.replace(".", "");
+
+        String contentType = "image/" + imageSuffix;
+        response.setContentType(contentType);
+        response.setHeader("Cache-Control", "max-age=2592000");
+
+        if (!FileUtil.exist(filePath)) {
+            return;
+        }
+
+        try {
+            File file = FileUtil.file(filePath);
+            FileUtil.writeToStream(file, response.getOutputStream());
+        } catch (IOException e) {
+            log.error("读取文件异常", e);
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public FileInfo newFolder(String filePid, String userId, String folderName) {
+        boolean checkResult = checkFileName(filePid, userId, folderName, FileFolderTypeEnums.FOLDER.getType());
+        FileInfo fileInfo = new FileInfo();
+        Date curDate = new Date();
+        if (checkResult) {
+            fileInfo.setFileId(StringTools.getRandomString(Constants.LENGTH_10));
+            fileInfo.setUserId(userId);
+            fileInfo.setFilePid(filePid);
+            fileInfo.setFileName(folderName);
+            fileInfo.setFolderType(FileFolderTypeEnums.FOLDER.getType());
+            fileInfo.setCreateTime(curDate);
+            fileInfo.setLastUpdateTime(curDate);
+            fileInfo.setStatus(FileStatusEnums.USING.getStatus());
+            fileInfo.setDelFlag(FileDelFlagEnums.USING.getFlag());
+            fileInfoMapper.insert(fileInfo);
+
+            // 多线程环境确保只能创建一个
+            FileInfoQuery fileInfoQuery = new FileInfoQuery();
+            fileInfoQuery.setFilePid(filePid);
+            fileInfoQuery.setUserId(userId);
+            fileInfoQuery.setFileName(folderName);
+            fileInfoQuery.setFolderType(FileFolderTypeEnums.FOLDER.getType());
+            fileInfoQuery.setDelFlag(FileDelFlagEnums.USING.getFlag());
+            Integer count = fileInfoMapper.selectCount(fileInfoQuery);
+            if (count > 1) {
+                throw new BusinessException("文件夹" + folderName + "已经存在");
+            }
+            fileInfo.setFileName(folderName);
+            fileInfo.setLastUpdateTime(curDate);
+        }
+        return fileInfo;
+    }
+
+    private boolean checkFileName(String filePid, String userId, String fileName, Integer folderType) {
+        FileInfoQuery fileInfoQuery = new FileInfoQuery();
+        fileInfoQuery.setFolderType(folderType);
+        fileInfoQuery.setFileName(fileName);
+        fileInfoQuery.setFilePid(filePid);
+        fileInfoQuery.setUserId(userId);
+        fileInfoQuery.setDelFlag(FileDelFlagEnums.USING.getFlag());
+        Integer count = fileInfoMapper.selectCount(fileInfoQuery);
+        return count == 0;
+    }
+
     @Async
     public void transferFile(String fileId, SessionWebUserDto webUserDto) {
         Boolean transferSuccess = true;
         String targetFilePath = null;
         String cover = null;
-        FileTypeEnums fileTypeEnum = null;
         FileInfo fileInfo = fileInfoMapper.selectByFileIdAndUserId(fileId, webUserDto.getUserId());
         try {
 
@@ -347,4 +485,220 @@ public class FileInfoServiceImpl implements FileInfoService {
             }
         }
     }
+
+    @Override
+    public List<FileInfo> getFolderInfo(String path, String userId) {
+        String[] pathArray = path.split("/");
+        String orderBy = "field(file_id,\"" + StringUtils.join(pathArray, "\",\"") + "\")";
+
+        FileInfoQuery infoQuery = new FileInfoQuery();
+        infoQuery.setUserId(userId);
+        infoQuery.setFolderType(FileFolderTypeEnums.FOLDER.getType());
+        infoQuery.setFileIdArray(pathArray);
+        infoQuery.setOrderBy(orderBy);
+
+        return fileInfoService.findListByParam(infoQuery);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public FileInfo rename(String fileId, String userId, String fileName) {
+        FileInfo fileInfo = fileInfoMapper.selectByFileIdAndUserId(fileId, userId);
+        if (fileInfo == null) {
+            throw new BusinessException("文件不存在");
+        }
+        if (fileInfo.getFileName().equals(fileName)) {
+            return fileInfo;
+        }
+        String filePid = fileInfo.getFilePid();
+
+        boolean checkResult = checkFileName(filePid, userId, fileName, fileInfo.getFolderType());
+
+        //文件获取后缀
+        if (FileFolderTypeEnums.FILE.getType().equals(fileInfo.getFolderType())) {
+            fileName = fileName + StringTools.getFileSuffix(fileInfo.getFileName());
+        }
+
+        Date curDate = new Date();
+        if (checkResult) {
+            FileInfo dbInfo = new FileInfo();
+            dbInfo.setFileName(fileName);
+            dbInfo.setLastUpdateTime(curDate);
+            fileInfoMapper.updateByFileIdAndUserId(dbInfo, fileId, userId);
+
+            // 多线程环境确保只有一个
+            FileInfoQuery fileInfoQuery = new FileInfoQuery();
+            fileInfoQuery.setFilePid(filePid);
+            fileInfoQuery.setUserId(userId);
+            fileInfoQuery.setFileName(fileName);
+            fileInfoQuery.setDelFlag(FileDelFlagEnums.USING.getFlag());
+            Integer count = fileInfoMapper.selectCount(fileInfoQuery);
+            if (count > 1) {
+                throw new BusinessException("文件名" + fileName + "已经存在");
+            }
+            fileInfo.setFileName(fileName);
+            fileInfo.setLastUpdateTime(curDate);
+        }
+        return fileInfo;
+    }
+
+    @Override
+    public List<FileInfo> loadAllFolder(HttpSession session, String filePid, String currentFileIds) {
+        FileInfoQuery query = new FileInfoQuery();
+        query.setUserId(SessionUtil.getUserInfoFromSession(session).getUserId());
+        query.setFilePid(filePid);
+        query.setFolderType(FileFolderTypeEnums.FOLDER.getType());
+        if (!StringTools.isEmpty(currentFileIds)) {
+            query.setExcludeFileIdArray(currentFileIds.split(","));
+        }
+        query.setDelFlag(FileDelFlagEnums.USING.getFlag());
+        query.setOrderBy("create_time desc");
+        return fileInfoService.findListByParam(query);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void changeFileFolder(String fileIds, String filePid, String userId) {
+        if (fileIds.equals(filePid)) {
+            throw new BusinessException(ResponseCodeEnum.CODE_600);
+        }
+
+        if (!Constants.ZERO_STR.equals(filePid)) {
+            FileInfo fileInfo = fileInfoService.getFileInfoByFileIdAndUserId(filePid, userId);
+            if (fileInfo == null || !FileDelFlagEnums.USING.getFlag().equals(fileInfo.getDelFlag())) {
+                throw new BusinessException(ResponseCodeEnum.CODE_600);
+            }
+        }
+
+        String[] fileIdArray = fileIds.split(",");
+
+        FileInfoQuery query = new FileInfoQuery();
+        query.setFilePid(filePid);
+        query.setUserId(userId);
+        List<FileInfo> dbFileList = fileInfoService.findListByParam(query);
+
+        //查询选中的文件
+        Map<String, FileInfo> dbFileNameMap = new HashMap<>();
+        for (FileInfo fileInfo : dbFileList) {
+            // 将文件名作为键，文件信息对象作为值放入 Map 中
+            dbFileNameMap.put(fileInfo.getFileName(), fileInfo);
+        }
+
+        query = new FileInfoQuery();
+        query.setUserId(userId);
+        query.setFileIdArray(fileIdArray);
+        List<FileInfo> selectFileList = fileInfoService.findListByParam(query);
+
+        //将所选文件重命名
+        for (FileInfo item : selectFileList) {
+            FileInfo rootFileInfo = dbFileNameMap.get(item.getFileName());
+            //文件名已经存在，重命名被还原的文件名
+            FileInfo newFileInfo = new FileInfo();
+            if (rootFileInfo != null) {
+                String fileName = StringTools.rename(item.getFileName());
+                newFileInfo.setFileName(fileName);
+            }
+            newFileInfo.setFilePid(filePid);
+            fileInfoMapper.updateByFileIdAndUserId(newFileInfo, item.getFileId(), userId);
+        }
+    }
+
+    @Override
+    public String createDownloadUrl(String fileId, String userId) {
+        FileInfo fileInfo = fileInfoService.getFileInfoByFileIdAndUserId(fileId, userId);
+
+        if (fileInfo == null) {
+            throw new BusinessException(ResponseCodeEnum.CODE_600);
+        }
+        if (FileFolderTypeEnums.FOLDER.getType().equals(fileInfo.getFolderType())) {
+            throw new BusinessException(ResponseCodeEnum.CODE_600);
+        }
+
+        String code = StringTools.getRandomString(Constants.LENGTH_50);
+        DownloadFileDto downloadFileDto = new DownloadFileDto();
+        downloadFileDto.setDownloadCode(code);
+        downloadFileDto.setFilePath(fileInfo.getFilePath());
+        downloadFileDto.setFileName(fileInfo.getFileName());
+
+        redisComponent.saveDownloadCode(code, downloadFileDto);
+        return  code;
+    }
+
+    @Override
+    public void download(HttpServletRequest request, HttpServletResponse response, String code) {
+        DownloadFileDto downloadFileDto = redisComponent.getDownloadCode(code);
+        if (null == downloadFileDto) {
+            return;
+        }
+        String filePath = FolderUtil.getProjectFolder() + Constants.FILE_FOLDER_FILE + downloadFileDto.getFilePath();
+        String fileName = downloadFileDto.getFileName();
+        response.setContentType("application/x-msdownload; charset=UTF-8");
+        try {
+            if (request.getHeader("User-Agent").toLowerCase().indexOf("msie") > 0) {//IE浏览器
+                fileName = URLEncoder.encode(fileName, "UTF-8");
+            } else {
+                fileName = new String(fileName.getBytes("UTF-8"), "ISO8859-1");
+            }
+        }catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        response.setHeader("Content-Disposition", "attachment;filename=\"" + fileName + "\"");
+
+        try {
+            File file = FileUtil.file(filePath);
+            FileUtil.writeToStream(file, response.getOutputStream());
+        } catch (IOException e) {
+            log.error("读取文件异常", e);
+        }
+    }
+
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void removeFile2RecycleBatch(String userId, String fileIds) {
+        String[] fileIdArray = fileIds.split(",");
+
+        FileInfoQuery query = new FileInfoQuery();
+        query.setUserId(userId);
+        query.setFileIdArray(fileIdArray);
+        query.setDelFlag(FileDelFlagEnums.USING.getFlag());
+        List<FileInfo> fileInfoList = fileInfoMapper.selectList(query);
+
+        if (fileInfoList.isEmpty()) {
+            return;
+        }
+
+        List<String> delFilePidList = new ArrayList<>();
+        for (FileInfo fileInfo : fileInfoList) {
+            findAllSubFolderFileIdList(delFilePidList, userId, fileInfo.getFileId(), FileDelFlagEnums.USING.getFlag());
+        }
+
+        //将目录下的所有文件更新为已删除
+        if (!delFilePidList.isEmpty()) {
+            FileInfo updateInfo = new FileInfo();
+            updateInfo.setDelFlag(FileDelFlagEnums.DEL.getFlag());
+            fileInfoMapper.updateFileDelFlagBatch(updateInfo, userId, delFilePidList, null, FileDelFlagEnums.USING.getFlag());
+        }
+
+        //将选中的文件更新为回收站
+        List<String> delFileIdList = Arrays.asList(fileIdArray);
+        FileInfo fileInfo = new FileInfo();
+        fileInfo.setRecoveryTime(new Date());
+        fileInfo.setDelFlag(FileDelFlagEnums.RECYCLE.getFlag());
+        fileInfoMapper.updateFileDelFlagBatch(fileInfo, userId, null, delFileIdList, FileDelFlagEnums.USING.getFlag());
+    }
+
+    private void findAllSubFolderFileIdList(List<String> fileIdList, String userId, String fileId, Integer delFlag) {
+        fileIdList.add(fileId);
+        FileInfoQuery query = new FileInfoQuery();
+        query.setUserId(userId);
+        query.setFilePid(fileId);
+        query.setDelFlag(delFlag);
+        query.setFolderType(FileFolderTypeEnums.FOLDER.getType());
+        List<FileInfo> fileInfoList = this.fileInfoMapper.selectList(query);
+        for (FileInfo fileInfo : fileInfoList) {
+            findAllSubFolderFileIdList(fileIdList, userId, fileInfo.getFileId(), delFlag);
+        }
+    }
+
 }
