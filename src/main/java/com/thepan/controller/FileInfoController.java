@@ -46,15 +46,7 @@ public class FileInfoController {
     @RequestMapping("/loadDataList")
     @GlobalInterceptor
     public ResponseVO loadDataList(HttpSession session, FileInfoQuery query, String category) {
-        FileCategoryEnums categoryEnum = FileCategoryEnums.getByCode(category);
-        if (categoryEnum != null) {
-            query.setFileCategory(categoryEnum.getCategory());
-        }
-        query.setUserId(SessionUtil.getUserInfoFromSession(session).getUserId());
-        query.setOrderBy("last_update_time desc");
-        query.setDelFlag(FileDelFlagEnums.USING.getFlag());
-        PaginationResultVO result = fileInfoService.findListByPage(query);
-
+        PaginationResultVO<FileInfo> result = fileInfoService.loadDataList(session, query, category);
         return ResponseUtil.getSuccessResponseVO(ResponseUtil.convert2PaginationVO(result, FileInfoVO.class));
     }
 

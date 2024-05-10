@@ -61,4 +61,6 @@ public interface FileInfoService {
     Integer findCountByParam(FileInfoQuery fileInfoQuery);
 
     void checkRootFilePid(String fileId, String shareUserId, String filePid);
+
+    PaginationResultVO<FileInfo> loadDataList(HttpSession session, FileInfoQuery query, String category);
 }

@@ -431,6 +431,8 @@ public class FileInfoServiceImpl implements FileInfoService {
 
     @Override
     public List<FileInfo> getFolderInfo(String path, String userId) {
+        // path: /folder1/folder2/file.txt
+        // orderBy: field(file_id,"folder1","folder2","file.txt")
         String[] pathArray = path.split("/");
         String orderBy = "field(file_id,\"" + StringUtils.join(pathArray, "\",\"") + "\")";
 
@@ -491,6 +493,7 @@ public class FileInfoServiceImpl implements FileInfoService {
         query.setUserId(SessionUtil.getUserInfoFromSession(session).getUserId());
         query.setFilePid(filePid);
         query.setFolderType(FileFolderTypeEnums.FOLDER.getType());
+
         if (!StringTools.isEmpty(currentFileIds)) {
             query.setExcludeFileIdArray(currentFileIds.split(","));
         }
@@ -781,6 +784,18 @@ public class FileInfoServiceImpl implements FileInfoService {
             return;
         }
         checkFilePid(rootFilePid, fileId, userId);
+    }
+
+    @Override
+    public PaginationResultVO<FileInfo> loadDataList(HttpSession session, FileInfoQuery query, String category) {
+        FileCategoryEnums categoryEnum = FileCategoryEnums.getByCode(category);
+        if (categoryEnum != null) {
+            query.setFileCategory(categoryEnum.getCategory());
+        }
+        query.setUserId(SessionUtil.getUserInfoFromSession(session).getUserId());
+        query.setOrderBy("last_update_time desc");
+        query.setDelFlag(FileDelFlagEnums.USING.getFlag());
+        return findListByPage(query);
     }
 
     private void checkFilePid(String rootFilePid, String fileId, String userId) {
