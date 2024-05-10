@@ -772,4 +772,28 @@ public class FileInfoServiceImpl implements FileInfoService {
         fileInfoMapper.deleteFileByUserId(userId);
     }
 
+    @Override
+    public void checkRootFilePid(String rootFilePid, String userId, String fileId) {
+        if (StringTools.isEmpty(fileId)) {
+            throw new BusinessException(ResponseCodeEnum.CODE_600);
+        }
+        if (rootFilePid.equals(fileId)) {
+            return;
+        }
+        checkFilePid(rootFilePid, fileId, userId);
+    }
+
+    private void checkFilePid(String rootFilePid, String fileId, String userId) {
+        FileInfo fileInfo = this.fileInfoMapper.selectByFileIdAndUserId(fileId, userId);
+        if (fileInfo == null) {
+            throw new BusinessException(ResponseCodeEnum.CODE_600);
+        }
+        if (Constants.ZERO_STR.equals(fileInfo.getFilePid())) {
+            throw new BusinessException(ResponseCodeEnum.CODE_600);
+        }
+        if (fileInfo.getFilePid().equals(rootFilePid)) {
+            return;
+        }
+        checkFilePid(rootFilePid, fileInfo.getFilePid(), userId);
+    }
 }

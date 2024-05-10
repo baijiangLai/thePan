@@ -194,5 +194,15 @@
         and share_id in(<foreach collection="shareIdArray" separator="," item="item">#{item}</foreach>)
     </delete>
 
+    <select id="selectByShareId" resultMap="base_result_map">
+        select
+        <include refid="base_column_list"/>
+        from file_share s where share_id=#{shareId}
+    </select>
 
+    <update id="updateShareShowCount">
+        update file_share
+        set show_count = show_count + 1
+        where share_id = #{shareId}
+    </update>
 </mapper>

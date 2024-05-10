@@ -385,4 +385,9 @@
         <include refid="query_condition"/>
     </select>
 
+    <select id="selectByUserId" resultMap="base_result_map">
+        select
+        <include refid="base_column_list"/>
+        from user_info where user_id=#{userId}
+    </select>
 </mapper>

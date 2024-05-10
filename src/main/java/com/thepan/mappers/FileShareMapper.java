@@ -2,6 +2,7 @@ package com.thepan.mappers;
 
 import com.thepan.entity.dao.FileShare;
 import com.thepan.entity.query.FileShareQuery;
+import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
@@ -9,6 +10,7 @@ import java.util.List;
 /**
  * 分享信息 数据库操作接口
  */
+@Mapper
 public interface FileShareMapper {
 
     Integer selectCount(@Param("fileShareQuery") FileShareQuery fileShareQuery);
@@ -18,4 +20,8 @@ public interface FileShareMapper {
     Integer insert(@Param("fileShare") FileShare share);
 
     Integer deleteFileShareBatch(@Param("shareIdArray") String[] shareIdArray, @Param("userId") String userId);
+
+    FileShare selectByShareId(@Param("shareId") String shareId);
+
+    Integer updateShareShowCount(@Param("shareId") String shareId);
 }

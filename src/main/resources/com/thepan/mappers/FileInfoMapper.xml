@@ -480,4 +480,45 @@
         from file_info
         where user_id = #{userId}
     </delete>
+
+    <insert id="insertBatch" parameterType="com.thepan.entity.dao.FileInfo">
+        INSERT INTO file_info(
+        file_id,
+        user_id,
+        file_md5,
+        file_pid,
+        file_size,
+        file_name,
+        file_cover,
+        file_path,
+        create_time,
+        last_update_time,
+        folder_type,
+        file_category,
+        file_type,
+        status,
+        recovery_time,
+        del_flag
+        )values
+        <foreach collection="fileInfoList" item="item" separator=",">
+            (
+            #{item.fileId},
+            #{item.userId},
+            #{item.fileMd5},
+            #{item.filePid},
+            #{item.fileSize},
+            #{item.fileName},
+            #{item.fileCover},
+            #{item.filePath},
+            #{item.createTime},
+            #{item.lastUpdateTime},
+            #{item.folderType},
+            #{item.fileCategory},
+            #{item.fileType},
+            #{item.status},
+            #{item.recoveryTime},
+            #{item.delFlag}
+            )
+        </foreach>
+    </insert>
 </mapper>

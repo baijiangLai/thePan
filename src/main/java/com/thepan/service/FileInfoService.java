@@ -59,4 +59,6 @@ public interface FileInfoService {
     List<FileInfo> findListByParam(FileInfoQuery fileInfoQuery);
 
     Integer findCountByParam(FileInfoQuery fileInfoQuery);
+
+    void checkRootFilePid(String fileId, String shareUserId, String filePid);
 }
