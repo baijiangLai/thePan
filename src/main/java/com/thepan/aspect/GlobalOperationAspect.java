@@ -2,7 +2,6 @@ package com.thepan.aspect;
 
 import com.thepan.annotation.GlobalInterceptor;
 import com.thepan.annotation.VerifyParam;
-import com.thepan.config.SenderProperties;
 import com.thepan.constants.Constants;
 import com.thepan.entity.dao.UserInfo;
 import com.thepan.entity.dto.SessionWebUserDto;
@@ -46,10 +45,10 @@ public class GlobalOperationAspect {
     @Resource
     private UserInfoService userInfoService;
 
-    @Resource
-    private SenderProperties senderProperties;
 
-
+    /**
+     * 捕获所有被GlobalInterceptor注解的方法，并添加前置通知
+     */
     @Pointcut("@annotation(com.thepan.annotation.GlobalInterceptor)")
     private void requestInterceptor() {
     }
@@ -70,7 +69,7 @@ public class GlobalOperationAspect {
              * 校验登录
              */
             if (interceptor.checkLogin() || interceptor.checkAdmin()) {
-//                checkLogin(interceptor.checkAdmin());
+                checkLogin(interceptor.checkAdmin());
             }
             /**
              * 校验参数
@@ -108,7 +107,7 @@ public class GlobalOperationAspect {
                 session.setAttribute(Constants.SESSION_KEY, sessionUser);
             }
         }
-        // 此时sessionUser还是null，那就是美登陆
+        // 此时sessionUser还是null，那就是没登陆
         if (null == sessionUser) {
             throw new BusinessException(ResponseCodeEnum.CODE_901);
         }
@@ -123,8 +122,8 @@ public class GlobalOperationAspect {
     private void validateParams(Method m, Object[] arguments) throws BusinessException {
         Parameter[] parameters = m.getParameters();
         for (int i = 0; i < parameters.length; i++) {
-            Parameter parameter = parameters[i];
-            Object value = arguments[i];
+            Parameter parameter = parameters[i]; //得到的是当前参数对象
+            Object value = arguments[i];    //获取当前参数值
             VerifyParam verifyParam = parameter.getAnnotation(VerifyParam.class);
             if (verifyParam == null) {
                 continue;
@@ -132,8 +131,8 @@ public class GlobalOperationAspect {
             //基本数据类型
             if (TYPE_STRING.equals(parameter.getParameterizedType().getTypeName()) || TYPE_LONG.equals(parameter.getParameterizedType().getTypeName()) || TYPE_INTEGER.equals(parameter.getParameterizedType().getTypeName())) {
                 checkValue(value, verifyParam);
-                //如果传递的是对象
             } else {
+                //如果传递的是对象
                 checkObjValue(parameter, value);
             }
         }
@@ -141,16 +140,24 @@ public class GlobalOperationAspect {
 
     private void checkObjValue(Parameter parameter, Object value) {
         try {
+            // 获取参数类型
             String typeName = parameter.getParameterizedType().getTypeName();
+            //获取对应的Class对象
             Class classz = Class.forName(typeName);
+            //获取该类下面所有字段
             Field[] fields = classz.getDeclaredFields();
+            //遍历字段
             for (Field field : fields) {
+                // 检查是否有@Verify注解
                 VerifyParam fieldVerifyParam = field.getAnnotation(VerifyParam.class);
                 if (fieldVerifyParam == null) {
                     continue;
                 }
+                // 设置字段可访问
                 field.setAccessible(true);
+                //字段值
                 Object resultValue = field.get(value);
+                // 校验值
                 checkValue(resultValue, fieldVerifyParam);
             }
         } catch (BusinessException e) {

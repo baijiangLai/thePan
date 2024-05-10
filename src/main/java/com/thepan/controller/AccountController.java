@@ -56,24 +56,8 @@ public class AccountController {
      * @throws IOException
      */
     @GetMapping("/checkCode")
-    public void checkcode(HttpServletResponse response, HttpSession session, Integer type) throws IOException { // 图片通过response传递给前端
-        // 创建随机验证码
-        CreateImageCode createImageCode = new CreateImageCode(130, 38, 5, 10);
-
-        // 设置响应头，禁用浏览器缓存
-        response.setHeader("Pragma", "no-cache");
-        response.setHeader("Cache-Control", "no-cache");
-        response.setDateHeader("Expires", 0);
-
-        //将验证码的数值存在session里面去 0:登录注册 1:邮箱验证码发送 默认0
-        if (type.intValue() == 0 || Objects.isNull(type)){
-            session.setAttribute(Constants.CHECK_CODE_KEY,createImageCode.getCode());
-        }else {
-            session.setAttribute(Constants.CHECK_CODE_KEY_EMAIL,createImageCode.getCode());
-        }
-
-        //  write方法里面通过使用ImageIO.write将验证码图片写入到response的输出流
-        createImageCode.write(response.getOutputStream());
+    public void checkCode(HttpServletResponse response, HttpSession session, Integer type) throws IOException { // 图片通过response传递给前端
+        userInfoService.checkCode(response,session,type);
     }
 
     /**
@@ -88,14 +72,7 @@ public class AccountController {
                                     @VerifyParam(required = true) String checkCode,
                                     @VerifyParam(required = true)  Integer type){
       try{
-          String sessionCode = (String) session.getAttribute(Constants.CHECK_CODE_KEY_EMAIL);
-          if (StrUtil.isEmpty(sessionCode)) {
-              throw new BusinessException("验证码已过期，请重新获取！！！");
-          }
-          if (!sessionCode.equals(checkCode.toLowerCase())){
-                throw new BusinessException("验证码输入不正确，请重新输入！！！");
-            }
-          emailCodeService.sendEmailCode(email,type);
+          emailCodeService.sendEmailCode(session, email, checkCode, type);
           return getSuccessResponseVO(new Date());
     } catch (Exception e) {
           e.printStackTrace();
@@ -108,7 +85,7 @@ public class AccountController {
     /**
      * 注册
      *  1. 验证验证码是否正确  2. 验证邮箱是否已注册  3. 注册
-     * @param httpSession
+     * @param session
      * @param nickName
      * @param password
      * @param email
@@ -117,18 +94,14 @@ public class AccountController {
      */
     @PostMapping("/register")
     @GlobalInterceptor
-    public ResponseVO register(HttpSession httpSession,
+    public ResponseVO register(HttpSession session,
                                @VerifyParam(required = true)String nickName,
                                @VerifyParam(required = true,regex = VerifyRegexEnum.PASSWORD, min = 8, max = 18)String password,
                                @VerifyParam(required = true,regex= VerifyRegexEnum.EMAIL)String email,
                                @VerifyParam(required = true)String checkCode,
                                @VerifyParam(required = true)String emailCode) {
         try {
-            if (!httpSession.getAttribute(Constants.CHECK_CODE_KEY).equals(checkCode.toLowerCase())) {
-                throw new BusinessException("验证码输入不正确，请重新输入！！！");
-            }
-            // 注册
-            int rows = userInfoService.register(email, password, emailCode, nickName);
+            int rows = userInfoService.register(session, nickName, password, email, checkCode, emailCode);
 
             if (rows == 1) {
                 ResponseVO responseVO = new ResponseVO();
@@ -138,27 +111,22 @@ public class AccountController {
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            if (httpSession.getAttribute(Constants.CHECK_CODE_KEY) != null) {
-                httpSession.removeAttribute(Constants.CHECK_CODE_KEY); // 移除旧验证码
+            if (session.getAttribute(Constants.CHECK_CODE_KEY) != null) {
+                session.removeAttribute(Constants.CHECK_CODE_KEY); // 移除旧验证码
             }
         }
-
-        return null;
+        return ResponseUtil.getSuccessResponseVO(null);
     }
 
 
     @RequestMapping("/login")
     @GlobalInterceptor(checkLogin = false, checkParams = true)
-    public ResponseVO login(HttpSession session, HttpServletRequest request,
+    public ResponseVO login(HttpSession session,
                             @VerifyParam(required = true) String email,
                             @VerifyParam(required = true) String password,
                             @VerifyParam(required = true) String checkCode) {
         try {
-            if (!checkCode.equalsIgnoreCase((String) session.getAttribute(Constants.CHECK_CODE_KEY))) {
-                throw new BusinessException("图片验证码不正确");
-            }
-            SessionWebUserDto sessionWebUserDto = userInfoService.login(email, password);
-            session.setAttribute(Constants.SESSION_KEY, sessionWebUserDto);
+            SessionWebUserDto sessionWebUserDto = userInfoService.login(session, email, password, checkCode);
             return getSuccessResponseVO(sessionWebUserDto);
         } finally {
             session.removeAttribute(Constants.CHECK_CODE_KEY);
@@ -173,10 +141,7 @@ public class AccountController {
                                @VerifyParam(required = true) String checkCode,
                                @VerifyParam(required = true) String emailCode) {
         try {
-            if (!checkCode.equalsIgnoreCase((String) session.getAttribute(Constants.CHECK_CODE_KEY))) {
-                throw new BusinessException("图片验证码不正确");
-            }
-            userInfoService.resetPwd(email, password, emailCode);
+            userInfoService.resetPwd(session,email, password, checkCode, emailCode);
             return getSuccessResponseVO(null);
         } finally {
             session.removeAttribute(Constants.CHECK_CODE_KEY);
@@ -186,43 +151,7 @@ public class AccountController {
     @RequestMapping("/getAvatar/{userId}")
     @GlobalInterceptor(checkLogin = false, checkParams = true)
     public void getAvatar(HttpServletResponse response, @VerifyParam(required = true) @PathVariable("userId") String userId) {
-        String avatarFolderName = Constants.FILE_FOLDER_FILE + Constants.FILE_FOLDER_AVATAR_NAME;
-        File folder = new File(FolderUtil.getProjectFolder() + avatarFolderName);
-        if (!folder.exists()) {
-            folder.mkdirs();
-        }
-
-        String avatarPath = FolderUtil.getProjectFolder() + avatarFolderName + userId + Constants.AVATAR_SUFFIX;
-        File file = new File(avatarPath);
-        if (!file.exists()) {
-            if (!new File(FolderUtil.getProjectFolder() + avatarFolderName + Constants.AVATAR_DEFUALT).exists()) {
-                response.setHeader("Content-Type", "application/json;charset=UTF-8");
-                response.setStatus(HttpStatus.OK.value());
-                PrintWriter writer = null;
-                try {
-                    writer = response.getWriter();
-                    writer.print("请在头像目录下放置默认头像default_avatar.jpg");
-                    writer.close();
-                } catch (Exception e) {
-                    log.error("输出无默认图失败", e);
-                } finally {
-                    writer.close();
-                }
-                return;
-            }
-            avatarPath = FolderUtil.getProjectFolder() + avatarFolderName + Constants.AVATAR_DEFUALT;
-        }
-        response.setContentType("image/jpg");
-        if (StrUtil.isEmpty(avatarPath)) {
-            return;
-        }
-        try {
-            OutputStream outputStream = response.getOutputStream();
-            outputStream.write(FileUtil.readBytes(avatarPath));
-        }catch (Exception e) {
-            e.printStackTrace();
-        }
-
+        userInfoService.getAvatar(response, userId);
     }
 
 
@@ -249,24 +178,7 @@ public class AccountController {
     @RequestMapping("/updateUserAvatar")
     @GlobalInterceptor
     public ResponseVO updateUserAvatar(HttpSession session, MultipartFile avatar) {
-        SessionWebUserDto webUserDto = SessionUtil.getUserInfoFromSession(session);
-        String baseFolder = FolderUtil.getProjectFolder() + Constants.FILE_FOLDER_FILE;
-        File targetFileFolder = new File(baseFolder + Constants.FILE_FOLDER_AVATAR_NAME);
-        if (!targetFileFolder.exists()) {
-            targetFileFolder.mkdirs();
-        }
-        File targetFile = new File(targetFileFolder.getPath() + "/" + webUserDto.getUserId() + Constants.AVATAR_SUFFIX);
-        try {
-            avatar.transferTo(targetFile);
-        } catch (Exception e) {
-            log.error("上传头像失败", e);
-        }
-
-        UserInfo userInfo = new UserInfo();
-        userInfo.setQqAvatar("");
-        userInfoService.updateUserInfoByUserId(userInfo, webUserDto.getUserId());
-        webUserDto.setAvatar(null);
-        session.setAttribute(Constants.SESSION_KEY, webUserDto);
+        userInfoService.updateUserAvatar(session, avatar);
         return getSuccessResponseVO(null);
     }
 
@@ -274,10 +186,7 @@ public class AccountController {
     @GlobalInterceptor(checkParams = true)
     public ResponseVO updatePassword(HttpSession session,
                                      @VerifyParam(required = true, regex = VerifyRegexEnum.PASSWORD, min = 8, max = 18) String password) {
-        SessionWebUserDto sessionWebUserDto = SessionUtil.getUserInfoFromSession(session);
-        UserInfo userInfo = new UserInfo();
-        userInfo.setPassword(StringTools.encodeByMD5(password));
-        userInfoService.updateUserInfoByUserId(userInfo, sessionWebUserDto.getUserId());
+        userInfoService.updatePassword(session, password);
         return getSuccessResponseVO(null);
     }
 
@@ -298,12 +207,8 @@ public class AccountController {
     public ResponseVO qqLoginCallback(HttpSession session,
                                       @VerifyParam(required = true) String code,
                                       @VerifyParam(required = true) String state) {
-        SessionWebUserDto sessionWebUserDto = userInfoService.qqLogin(code);
-        session.setAttribute(Constants.SESSION_KEY, sessionWebUserDto);
-        Map<String, Object> result = new HashMap<>();
-        result.put("callbackUrl", session.getAttribute(state));
-        result.put("userInfo", sessionWebUserDto);
-        return getSuccessResponseVO(result);
+        Map<String, Object> resultMap = userInfoService.qqLogin(session, code, state);
+        return getSuccessResponseVO(resultMap);
     }
 
 }

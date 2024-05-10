@@ -18,7 +18,7 @@ public class SenderProperties {
     /**
      * 发件人密码
      */
-    @Value("${spring.mail.pring.mail.password:}")
+    @Value("${spring.mail.password}")
     private String password;
 
 }

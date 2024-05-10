@@ -22,7 +22,7 @@ public interface FileShareService {
 
     PaginationResultVO<FileShare> findListByPage(FileShareQuery param);
 
-    PaginationResultVO loadShareList(HttpSession session, FileShareQuery query);
+    PaginationResultVO<FileShare> loadShareList(HttpSession session, FileShareQuery query);
 
     FileShare shareFile(HttpSession session, String fileId, Integer validType, String code);
 

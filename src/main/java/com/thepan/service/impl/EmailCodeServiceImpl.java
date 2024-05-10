@@ -1,6 +1,7 @@
 package com.thepan.service.impl;
 
 
+import cn.hutool.core.util.StrUtil;
 import com.thepan.config.SenderProperties;
 import com.thepan.constants.Constants;
 import com.thepan.entity.dao.EmailCode;
@@ -17,6 +18,7 @@ import com.thepan.utils.StringTools;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.servlet.http.HttpSession;
 import java.util.Date;
 
 
@@ -52,7 +54,16 @@ public class EmailCodeServiceImpl implements EmailCodeService {
      * 5. 存入新验证码
      */
     @Override
-    public void sendEmailCode(String email, Integer type) {
+    public void sendEmailCode(HttpSession session, String email, String checkCode, Integer type) {
+        // 0 判断验证码
+        String sessionCode = (String) session.getAttribute(Constants.CHECK_CODE_KEY_EMAIL);
+        if (StrUtil.isEmpty(sessionCode)) {
+            throw new BusinessException("验证码已过期，请重新获取！！！");
+        }
+        if (!sessionCode.equals(checkCode.toLowerCase())){
+            throw new BusinessException("验证码输入不正确，请重新输入！！！");
+        }
+
         // 1. 是否为注册
         if (Constants.ZERO.equals(type)) {
             UserInfo userInfo = userInfoMapper.selectByEmail(email);
