@@ -82,8 +82,7 @@ public class FileShareServiceImpl implements FileShareService {
         String userId = SessionUtil.getUserInfoFromSession(session).getUserId();
         query.setUserId(userId);
         query.setQueryFileName(true);
-        PaginationResultVO<FileShare> resultVO = findListByPage(query);
-        return resultVO;
+        return findListByPage(query);
     }
 
     @Override

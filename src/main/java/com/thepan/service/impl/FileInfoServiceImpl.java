@@ -637,14 +637,14 @@ public class FileInfoServiceImpl implements FileInfoService {
     @Override
     public PaginationResultVO loadRecycleList(HttpSession session, Integer pageNo, Integer pageSize) {
         String userId = SessionUtil.getUserInfoFromSession(session).getUserId();
+
         FileInfoQuery query = new FileInfoQuery();
         query.setPageSize(pageSize);
         query.setPageNo(pageNo);
         query.setUserId(userId);
         query.setOrderBy("recovery_time desc");
         query.setDelFlag(FileDelFlagEnums.RECYCLE.getFlag());
-        PaginationResultVO result = fileInfoService.findListByPage(query);
-        return result;
+        return fileInfoService.findListByPage(query);
     }
 
 
